@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Tiến Độ - Version A.13 (Stable ID)</title>
+    <title>Deadline manage</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -78,7 +78,7 @@
 
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
-        <input type="text" id="taskDept" placeholder="Bộ phận...">
+        <input type="text" id="taskDept" placeholder="Bộ phận /người xử lý...">
         <input type="date" id="startDate" title="Bắt đầu">
         <input type="date" id="deadline" title="Hạn chót">
         <input type="number" id="iterCount" value="1" title="Lần">
@@ -92,7 +92,7 @@
             <thead>
                 <tr>
                     <th class="col-stt">STT</th>
-                    <th class="col-1">Việc / Bộ phận</th>
+                    <th class="col-1">Việc / Bộ phận / người xử lý</th>
                     <th class="col-2">Bắt đầu</th>
                     <th class="col-3">Hạn chót</th>
                     <th class="col-4">Lần</th>
