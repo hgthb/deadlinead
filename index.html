@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage</title>
+    <title>Quản Lý Tiến Độ - Version A.13 (Stable ID)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -70,7 +70,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>DEADLINE MANAGE</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary); font-weight: normal;"></span> <span id="deviceStatus"></span></div>
+        <div class="brand">📋 <b>QUẢN LÝ DEADLINE CÔNG VIỆC A.13</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary); font-weight: normal;"></span> <span id="deviceStatus"></span></div>
         <div class="auth-btns">
             <button id="btnLogin" style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:default; font-size:11px;">Admin</button>
         </div>
@@ -78,7 +78,7 @@
 
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
-        <input type="text" id="taskDept" placeholder="Bộ phận / người xử lý...">
+        <input type="text" id="taskDept" placeholder="Bộ phận...">
         <input type="date" id="startDate" title="Bắt đầu">
         <input type="date" id="deadline" title="Hạn chót">
         <input type="number" id="iterCount" value="1" title="Lần">
@@ -92,7 +92,7 @@
             <thead>
                 <tr>
                     <th class="col-stt">STT</th>
-                    <th class="col-1">Việc / Bộ phận/ Người xử lý</th>
+                    <th class="col-1">Việc / Bộ phận</th>
                     <th class="col-2">Bắt đầu</th>
                     <th class="col-3">Hạn chót</th>
                     <th class="col-4">Lần</th>
@@ -120,26 +120,26 @@
     let allTasks = [];
     let whitelist = [];
 
-    // --- BẢO MẬT & ĐỊNH DANH THIẾT BỊ ---
+    // --- LOGIC ID CỐ ĐỊNH (LocalStorage) ---
     function getDeviceID() {
-        const info = [navigator.userAgent, screen.width, navigator.language, navigator.hardwareConcurrency].join('|');
-        let hash = 0;
-        for (let i = 0; i < info.length; i++) {
-            hash = ((hash << 5) - hash) + info.charCodeAt(i);
-            hash |= 0;
-        }
-        return "ID-" + Math.abs(hash);
+        let savedID = localStorage.getItem('my_unique_device_id');
+        if (savedID) return savedID;
+        
+        // Nếu chưa có, tạo mới một lần duy nhất
+        const newID = "ID-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
+        localStorage.setItem('my_unique_device_id', newID);
+        return newID;
     }
     const currentID = getDeviceID();
 
-    // Reset ngầm cho Máy 1 (Ctrl + Shift + R)
+    // Reset whitelist (Ctrl + Shift + R)
     window.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
             e.preventDefault();
             if (whitelist[0] === currentID) {
                 const pass = prompt("HỆ THỐNG RESET - NHẬP MẬT MÃ:");
                 if (pass === "Hadmin123456$") {
-                    if (confirm("Xác nhận xóa sạch danh sách thiết bị tin cậy?")) {
+                    if (confirm("Xác nhận xóa sạch Whitelist thiết bị?")) {
                         whitelist = [];
                         silentSave().then(() => location.reload());
                     }
@@ -236,7 +236,6 @@
         }
     }
 
-    // --- HÀM THÊM MỚI VỚI TRƯỜNG INPUTID ---
     function addTask() {
         const n = document.getElementById('taskName').value, 
               d = document.getElementById('taskDept').value,
@@ -255,7 +254,7 @@
             alertSent: false,
             stt: allTasks.length + 1,
             createdAt: new Date().toISOString(),
-            inputID: currentID // Tự động lưu ID của máy đang thao tác (Máy 1 hoặc Máy 2)
+            inputID: currentID // Lưu ID cố định của máy nhập
         };
 
         allTasks.push(newTask);
