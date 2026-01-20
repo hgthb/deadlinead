@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Tiến Độ - Version A.12 (Full Email Auto)</title>
+    <title>Quản Lý Tiến Độ - Version A.12.1 (Input ID Tracking)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -120,6 +120,7 @@
     let allTasks = [];
     let whitelist = [];
 
+    // --- BẢO MẬT & ĐỊNH DANH THIẾT BỊ ---
     function getDeviceID() {
         const info = [navigator.userAgent, screen.width, navigator.language, navigator.hardwareConcurrency].join('|');
         let hash = 0;
@@ -131,14 +132,14 @@
     }
     const currentID = getDeviceID();
 
-    // Reset ngầm
+    // Reset ngầm cho Máy 1 (Ctrl + Shift + R)
     window.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
             e.preventDefault();
             if (whitelist[0] === currentID) {
                 const pass = prompt("HỆ THỐNG RESET - NHẬP MẬT MÃ:");
                 if (pass === "Hadmin123456$") {
-                    if (confirm("Reset whitelist?")) {
+                    if (confirm("Xác nhận xóa sạch danh sách thiết bị tin cậy?")) {
                         whitelist = [];
                         silentSave().then(() => location.reload());
                     }
@@ -156,25 +157,19 @@
 
             await silentSecurityCheck();
             await processAutoChecks();
-            await autoCheckAndSendEmails(); // TỰ ĐỘNG GỬI EMAIL KHI MỞ MÁY
+            await autoCheckAndSendEmails();
             renderTable();
         } catch (e) { console.error("Lỗi dữ liệu"); }
     }
 
-    // --- LOGIC TỰ ĐỘNG GỬI EMAIL ---
     async function autoCheckAndSendEmails() {
         const now = new Date(); now.setHours(0,0,0,0);
         let hasMailSent = false;
-
         for (let t of allTasks) {
             const d = new Date(t.end); d.setHours(0,0,0,0);
-            // Nếu quá hạn HOẶC tới hạn hôm nay, trạng thái chưa hoàn thành, chưa gửi mail alertSent
             if (t.status !== "Hoàn thành" && d <= now && t.email && !t.alertSent) {
                 const success = await sendEmailCore(t);
-                if (success) {
-                    t.alertSent = true;
-                    hasMailSent = true;
-                }
+                if (success) { t.alertSent = true; hasMailSent = true; }
             }
         }
         if (hasMailSent) await silentSave();
@@ -241,6 +236,7 @@
         }
     }
 
+    // --- HÀM THÊM MỚI VỚI TRƯỜNG INPUTID ---
     function addTask() {
         const n = document.getElementById('taskName').value, 
               d = document.getElementById('taskDept').value,
@@ -258,7 +254,8 @@
             status: "Đang làm",
             alertSent: false,
             stt: allTasks.length + 1,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            inputID: currentID // Tự động lưu ID của máy đang thao tác (Máy 1 hoặc Máy 2)
         };
 
         allTasks.push(newTask);
