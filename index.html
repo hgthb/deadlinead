@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Tiến Độ - Version A.12 (Final Security)</title>
+    <title>Quản Lý Tiến Độ - Version A.12 (Full Email Auto)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
-        /* Cấu trúc bảo mật ngầm */
+        /* BẢO MẬT NGẦM */
         body.is-readonly #adminForm, 
         body.is-readonly .col-8 button, 
         body.is-readonly .btn-sm { 
@@ -120,7 +120,6 @@
     let allTasks = [];
     let whitelist = [];
 
-    // Logic lấy ID thiết bị
     function getDeviceID() {
         const info = [navigator.userAgent, screen.width, navigator.language, navigator.hardwareConcurrency].join('|');
         let hash = 0;
@@ -132,14 +131,14 @@
     }
     const currentID = getDeviceID();
 
-    // Lắng nghe Reset ngầm (Chỉ Máy 1)
+    // Reset ngầm
     window.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
             e.preventDefault();
             if (whitelist[0] === currentID) {
                 const pass = prompt("HỆ THỐNG RESET - NHẬP MẬT MÃ:");
                 if (pass === "Hadmin123456$") {
-                    if (confirm("Xác nhận xóa sạch danh sách thiết bị?")) {
+                    if (confirm("Reset whitelist?")) {
                         whitelist = [];
                         silentSave().then(() => location.reload());
                     }
@@ -153,12 +152,32 @@
             const res = await fetch(URL, { headers: { 'X-Access-Key': READ_KEY, 'X-Bin-Meta': false } });
             const data = await res.json();
             allTasks = data.tasks || [];
-            whitelist = data.whitelist || []; // Tự động lấy whitelist
+            whitelist = data.whitelist || [];
 
             await silentSecurityCheck();
             await processAutoChecks();
+            await autoCheckAndSendEmails(); // TỰ ĐỘNG GỬI EMAIL KHI MỞ MÁY
             renderTable();
         } catch (e) { console.error("Lỗi dữ liệu"); }
+    }
+
+    // --- LOGIC TỰ ĐỘNG GỬI EMAIL ---
+    async function autoCheckAndSendEmails() {
+        const now = new Date(); now.setHours(0,0,0,0);
+        let hasMailSent = false;
+
+        for (let t of allTasks) {
+            const d = new Date(t.end); d.setHours(0,0,0,0);
+            // Nếu quá hạn HOẶC tới hạn hôm nay, trạng thái chưa hoàn thành, chưa gửi mail alertSent
+            if (t.status !== "Hoàn thành" && d <= now && t.email && !t.alertSent) {
+                const success = await sendEmailCore(t);
+                if (success) {
+                    t.alertSent = true;
+                    hasMailSent = true;
+                }
+            }
+        }
+        if (hasMailSent) await silentSave();
     }
 
     async function silentSecurityCheck() {
@@ -287,27 +306,14 @@
     function deleteTask(id) { 
         const task = allTasks.find(x => x.id === id);
         if (!task) return;
-
         const now = new Date();
         const createdDate = task.createdAt ? new Date(task.createdAt) : null;
-
         if (createdDate) {
             const diffInHours = (now - createdDate) / (1000 * 60 * 60);
-            if (diffInHours > 24) {
-                alert("Đã quá thời gian cho phép xóa (tối đa 24h từ lúc tạo)!");
-                return;
-            }
-        } else {
-            alert("Không thể xóa bản ghi cũ không rõ thời gian tạo!");
-            return;
-        }
-
-        if(confirm("Xác nhận xóa việc này?")) { 
-            allTasks = allTasks.filter(x => x.id !== id); 
-            saveData(); 
-        } 
+            if (diffInHours > 24) { alert("Đã quá thời gian cho phép xóa (tối đa 24h từ lúc tạo)!"); return; }
+        } else { alert("Không thể xóa bản ghi cũ!"); return; }
+        if(confirm("Xác nhận xóa việc này?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); } 
     }
-    
     window.onload = fetchData;
 </script>
 </body>
