@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage</title>
+    <title>Quản Lý Tiến Độ - Version A.15 (Chrome/Safari Only)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
+        /* CẢNH BÁO TRÌNH DUYỆT */
+        #browserGuard {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+            padding: 20px;
+        }
+
         /* BẢO MẬT NGẦM */
         body.is-readonly #adminForm, 
         body.is-readonly .col-8 button, 
@@ -68,17 +75,27 @@
 </head>
 <body class="is-readonly">
 
+<div id="browserGuard">
+    <div>
+        <i class="fa-brands fa-chrome" style="font-size: 60px; color: #4285F4; margin: 10px;"></i>
+        <i class="fa-brands fa-safari" style="font-size: 60px; color: #00AEEF; margin: 10px;"></i>
+    </div>
+    <h2 style="color: var(--dark)">Trình duyệt không được hỗ trợ</h2>
+    <p style="color: #64748b; line-height: 1.6;">Để đảm bảo an toàn dữ liệu, vui lòng sử dụng:<br>
+    <b style="color: var(--primary)">Google Chrome</b> hoặc <b style="color: var(--primary)">Safari</b></p>
+</div>
+
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>DEADLINE MANAGE</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary); font-weight: normal;"></span> <span id="deviceStatus"></span></div>
+        <div class="brand">📋 <b>QUẢN LÝ TIẾN ĐỘ - V.15</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary); font-weight: normal;"></span> <span id="deviceStatus"></span></div>
         <div class="auth-btns">
-            <button id="btnLogin" style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:default; font-size:11px;">Admin</button>
+            <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; cursor:default; font-size:11px;">Admin Control</button>
         </div>
     </div>
 
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
-        <input type="text" id="taskDept" placeholder="Bộ phận /người xử lý...">
+        <input type="text" id="taskDept" placeholder="Bộ phận...">
         <input type="date" id="startDate" title="Bắt đầu">
         <input type="date" id="deadline" title="Hạn chót">
         <input type="number" id="iterCount" value="1" title="Lần">
@@ -92,7 +109,7 @@
             <thead>
                 <tr>
                     <th class="col-stt">STT</th>
-                    <th class="col-1">Việc / Bộ phận / người xử lý</th>
+                    <th class="col-1">Việc / Bộ phận</th>
                     <th class="col-2">Bắt đầu</th>
                     <th class="col-3">Hạn chót</th>
                     <th class="col-4">Lần</th>
@@ -120,26 +137,34 @@
     let allTasks = [];
     let whitelist = [];
 
-    // --- LOGIC ID CỐ ĐỊNH (LocalStorage) ---
+    // --- MODULE KIỂM TRA TRÌNH DUYỆT ---
+    function checkBrowser() {
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+        const isSafari = /Safari/.test(ua) && /Apple Computer/.test(navigator.vendor) && !/Chrome/.test(ua);
+        
+        if (!isChrome && !isSafari) {
+            document.getElementById('browserGuard').style.display = 'flex';
+        }
+    }
+
+    // --- ID CỐ ĐỊNH (LOCALSTORAGE) ---
     function getDeviceID() {
         let savedID = localStorage.getItem('my_unique_device_id');
         if (savedID) return savedID;
-        
-        // Nếu chưa có, tạo mới một lần duy nhất
         const newID = "ID-" + Date.now() + "-" + Math.floor(Math.random() * 1000);
         localStorage.setItem('my_unique_device_id', newID);
         return newID;
     }
     const currentID = getDeviceID();
 
-    // Reset whitelist (Ctrl + Shift + R)
     window.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
             e.preventDefault();
             if (whitelist[0] === currentID) {
                 const pass = prompt("HỆ THỐNG RESET - NHẬP MẬT MÃ:");
                 if (pass === "Hadmin123456$") {
-                    if (confirm("Xác nhận xóa sạch Whitelist thiết bị?")) {
+                    if (confirm("Xóa Whitelist?")) {
                         whitelist = [];
                         silentSave().then(() => location.reload());
                     }
@@ -149,12 +174,12 @@
     });
 
     async function fetchData() {
+        checkBrowser(); // Chạy kiểm tra trình duyệt
         try {
             const res = await fetch(URL, { headers: { 'X-Access-Key': READ_KEY, 'X-Bin-Meta': false } });
             const data = await res.json();
             allTasks = data.tasks || [];
             whitelist = data.whitelist || [];
-
             await silentSecurityCheck();
             await processAutoChecks();
             await autoCheckAndSendEmails();
@@ -184,7 +209,7 @@
             await silentSave();
             document.body.classList.remove('is-readonly');
         } else {
-            statusEl.innerText = "(Read-only)";
+            statusEl.innerText = "(Chế độ xem)";
             document.body.classList.add('is-readonly');
         }
     }
@@ -227,12 +252,7 @@
         const t = allTasks.find(x => x.id === id);
         if(confirm("Gửi thư nhắc việc quá hạn?")) {
             const success = await sendEmailCore(t);
-            if (success) { 
-                t.alertSent = true; 
-                await silentSave(); 
-                renderTable(); 
-                alert("Đã gửi email thành công!"); 
-            }
+            if (success) { t.alertSent = true; await silentSave(); renderTable(); alert("Thành công!"); }
         }
     }
 
@@ -242,7 +262,6 @@
               s = document.getElementById('startDate').value, 
               e = document.getElementById('deadline').value,
               m = document.getElementById('emailRecipient').value;
-        
         if(!n || !s || !e) return alert("Thiếu thông tin!");
 
         const newTask = {
@@ -250,16 +269,13 @@
             name: n, dept: d, email: m, start: s, end: e,
             iteration: document.getElementById('iterCount').value,
             ref: document.getElementById('taskRef').value,
-            status: "Đang làm",
-            alertSent: false,
+            status: "Đang làm", alertSent: false,
             stt: allTasks.length + 1,
             createdAt: new Date().toISOString(),
-            inputID: currentID // Lưu ID cố định của máy nhập
+            inputID: currentID 
         };
-
         allTasks.push(newTask);
         saveData();
-        
         document.getElementById('taskName').value=''; document.getElementById('taskDept').value=''; 
         document.getElementById('taskRef').value=''; document.getElementById('emailRecipient').value='';
     }
@@ -268,20 +284,17 @@
         const body = document.getElementById('taskBody');
         body.innerHTML = '';
         const now = new Date(); now.setHours(0,0,0,0);
-        
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
             let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
             const sttDisplay = t.stt || (allTasks.length - index);
-            
-            const mailTooltip = t.alertSent ? "Đã gửi thư nhắc nhở" : "Gửi thư nhắc việc quá hạn";
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
-                    <td class="col-stt" style="color:#64748b; font-weight:bold">${sttDisplay}</td>
-                    <td class="col-1"><b>${t.name}</b><br><small style="color:#94a3b8">${t.dept || ''}</small></td>
+                    <td class="col-stt">${sttDisplay}</td>
+                    <td class="col-1"><b>${t.name}</b><br><small>${t.dept || ''}</small></td>
                     <td class="col-2">${t.start}</td>
                     <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${t.end}</td>
                     <td class="col-4">${t.iteration}</td>
@@ -289,26 +302,22 @@
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
-                        <button class="btn-sm" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''} title="Hoàn thành"><i class="fa-solid fa-check"></i></button>
-                        ${isOverdue ? `<button class="btn-sm" style="background:${mailBg}; color:black" onclick="sendEmailManual('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
-                        <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-sm" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''}><i class="fa-solid fa-check"></i></button>
+                        ${isOverdue ? `<button class="btn-sm" style="background:${mailBg}; color:black" onclick="sendEmailManual('${t.id}')"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                        <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
         });
     }
 
     function confirmComplete(id) { if(confirm("Xác nhận hoàn thành?")) { allTasks.find(x => x.id === id).status = "Hoàn thành"; saveData(); } }
-    
     function deleteTask(id) { 
         const task = allTasks.find(x => x.id === id);
         if (!task) return;
         const now = new Date();
-        const createdDate = task.createdAt ? new Date(task.createdAt) : null;
-        if (createdDate) {
-            const diffInHours = (now - createdDate) / (1000 * 60 * 60);
-            if (diffInHours > 24) { alert("Đã quá thời gian cho phép xóa (tối đa 24h từ lúc tạo)!"); return; }
-        } else { alert("Không thể xóa bản ghi cũ!"); return; }
-        if(confirm("Xác nhận xóa việc này?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); } 
+        const diffInHours = (now - new Date(task.createdAt)) / (1000 * 60 * 60);
+        if (diffInHours > 24) { alert("Quá 24h không thể xóa!"); return; }
+        if(confirm("Xác nhận xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); } 
     }
     window.onload = fetchData;
 </script>
