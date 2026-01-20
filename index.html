@@ -36,7 +36,6 @@
         #taskRef { margin-left: -20px; }
 
         input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
-        /* Highlight ô đang nhập liệu */
         input:focus { border-color: var(--primary); box-shadow: 0 0 3px rgba(67, 97, 238, 0.3); }
 
         .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
@@ -118,29 +117,21 @@
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
 
-    // --- LOGIC ĐIỀU KHIỂN CON TRỎ (INPUT FOCUS LOGIC) ---
     const inputOrder = ["taskName", "taskDept", "startDate", "deadline", "iterCount", "taskRef", "emailRecipient"];
     
     inputOrder.forEach((id, index) => {
         const el = document.getElementById(id);
-        
-        // Ngăn thoát khỏi ô nếu trống
         el.addEventListener('blur', function() {
             if (!this.value && !document.body.classList.contains('is-readonly')) {
                 setTimeout(() => this.focus(), 10);
             }
         });
-
-        // Nhấn Enter để nhảy ô
         el.addEventListener('keydown', function(e) {
             if (e.key === "Enter") {
                 if (this.value) {
                     const nextId = inputOrder[index + 1];
-                    if (nextId) {
-                        document.getElementById(nextId).focus();
-                    } else {
-                        document.getElementById('btnAdd').focus();
-                    }
+                    if (nextId) document.getElementById(nextId).focus();
+                    else document.getElementById('btnAdd').focus();
                 }
             }
         });
@@ -176,11 +167,7 @@
             await processAutoChecks();
             await autoCheckAndSendEmails();
             renderTable();
-            
-            // Tự động focus ô đầu tiên nếu có quyền
-            if (!document.body.classList.contains('is-readonly')) {
-                document.getElementById('taskName').focus();
-            }
+            if (!document.body.classList.contains('is-readonly')) document.getElementById('taskName').focus();
         } catch (e) { console.error("Lỗi nạp dữ liệu"); }
     }
 
@@ -241,7 +228,6 @@
         });
         saveData();
         ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
-        // Reset focus về ô đầu sau khi thêm
         document.getElementById('taskName').focus();
     }
 
@@ -280,11 +266,34 @@
     }
 
     function confirmComplete(id) { if(confirm("Hoàn thành?")) { allTasks.find(x => x.id === id).status = "Hoàn thành"; saveData(); } }
+    
+    // --- LOGIC XÓA PHÂN QUYỀN (ADMIN PRIVILEGE) ---
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
-        if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("Quá 24h!");
-        if(confirm("Xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
+        if (!t) return;
+
+        const isAdmin = (whitelist[0] === currentID); // Kiểm tra nếu là Máy 1
+
+        if (isAdmin) {
+            // Máy 1 xóa không cần xét thời gian
+            if(confirm("Xác nhận xóa (Quyền Admin)?")) { 
+                allTasks = allTasks.filter(x => x.id !== id); 
+                saveData(); 
+            }
+        } else {
+            // Các máy khác (Máy 2) vẫn kiểm tra 24h
+            const diffInHours = (new Date() - new Date(t.createdAt)) / 3600000;
+            if (diffInHours > 24) {
+                alert("Bạn chỉ có thể xóa record trong vòng 24h kể từ khi tạo!");
+                return;
+            }
+            if(confirm("Xác nhận xóa?")) { 
+                allTasks = allTasks.filter(x => x.id !== id); 
+                saveData(); 
+            }
+        }
     }
+
     window.onload = fetchData;
 </script>
 </body>
