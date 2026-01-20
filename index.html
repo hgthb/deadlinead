@@ -3,30 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.23 (Final Logic)</title>
+    <title>Deadline Manage - Version A.24 (Legacy A.18 Base)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #4361ee; --danger: #ef476f; --success: #2ecc71; --bg: #f1f5f9; --text: #1e293b; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; color: var(--text); }
 
-        /* Khóa giao diện khi không có quyền Admin */
+        /* Khóa giao diện cho máy ngoài whitelist */
         body.is-readonly #adminForm, 
         body.is-readonly .col-8 button, 
         body.is-readonly .btn-sm { pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; }
         body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
 
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        
         #adminForm { display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.4fr 1.5fr 1.5fr 0.6fr; gap: 5px; background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 5px; }
+
         input { height: 32px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
         .btn-add { height: 32px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 12px; }
+
         .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border-bottom: 1px solid #f1f5f9; font-size: 12px; height: 42px; padding: 0 12px; }
-        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; text-align: left; z-index: 10; text-transform: uppercase; }
-        .col-stt { width: 40px; text-align: center; }
-        .col-8 { width: 100px; text-align: right; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 80px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border-bottom: 1px solid #f1f5f9; font-size: 12px; height: 42px; padding: 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; text-align: left; z-index: 10; text-transform: uppercase; font-size: 11px; }
+
+        .col-stt { width: 50px; text-align: center; }
+        .col-1 { width: 28%; }
+        .col-8 { width: 110px; text-align: right; }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 85px; text-align: center; }
         .btn-sm { width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; color: white; margin-left: 5px; }
         #deviceStatus { font-size: 10px; font-weight: 600; color: #94a3b8; }
     </style>
@@ -35,19 +41,19 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.23</b> <span id="syncStatus" style="font-size: 10px; margin-left:10px; color: var(--primary);"></span></div>
-        <div id="deviceStatus">Xác thực...</div>
+        <div class="brand">📋 <b>PROJECT A.24</b> <span id="syncStatus" style="font-size: 10px; margin-left:10px; color: var(--primary);"></span></div>
+        <div id="deviceStatus"></div>
     </div>
 
     <div id="adminForm">
-        <input type="text" id="taskName" placeholder="Việc...">
-        <input type="text" id="taskDept" placeholder="Người xử lý...">
+        <input type="text" id="taskName" placeholder="Tên công việc...">
+        <input type="text" id="taskDept" placeholder="Bộ phận...">
         <input type="date" id="startDate">
         <input type="date" id="deadline">
         <input type="number" id="iterCount" value="1">
         <input type="text" id="taskRef" placeholder="Tham chiếu...">
         <input type="text" id="emailRecipient" placeholder="Email...">
-        <button class="btn-add" onclick="addTask()">THÊM</button>
+        <button class="btn-add" onclick="addTask()">THÊM MỚI</button>
     </div>
 
     <div class="main-content">
@@ -55,12 +61,13 @@
             <thead>
                 <tr>
                     <th class="col-stt">STT</th>
-                    <th>Nội dung</th>
+                    <th class="col-1">Nội dung công việc</th>
                     <th>Bắt đầu</th>
                     <th>Hạn chót</th>
-                    <th>Lần</th>
-                    <th>Status</th>
-                    <th class="col-8">Sửa/Xóa</th>
+                    <th style="width:50px">Lần</th>
+                    <th>Tham chiếu</th>
+                    <th>Trạng thái</th>
+                    <th class="col-8">Thao tác</th>
                 </tr>
             </thead>
             <tbody id="taskBody"></tbody>
@@ -88,22 +95,19 @@
     }
     const currentID = getDeviceID();
 
-    // RESET QUYỀN: CHỈ CHẤP NHẬN TỪ MÁY ID1
+    // Reset logic: Chỉ dành cho máy ở vị trí 1 trong whitelist
     window.addEventListener('keydown', e => {
         if (e.ctrlKey && e.shiftKey && e.code === 'KeyR') {
             e.preventDefault();
-            // Kiểm tra máy hiện tại có phải máy đầu tiên trong danh sách không
             if (whitelist.length > 0 && whitelist[0] === currentID) {
-                const pass = prompt("XÁC NHẬN MẬT MÃ RESET WHITELIST:");
+                const pass = prompt("XÁC NHẬN MẬT MÃ RESET:");
                 if (pass === "Hadmin123456$") {
-                    whitelist = []; 
+                    whitelist = [];
                     saveToCloud().then(() => {
-                        alert("Đã reset toàn bộ danh sách thiết bị!");
+                        alert("Đã xóa whitelist. Vui lòng tải lại trang.");
                         location.reload();
                     });
                 } else if (pass !== null) alert("Mật mã không đúng.");
-            } else {
-                console.warn("Chỉ máy chủ (ID1) mới có quyền Reset.");
             }
         }
     });
@@ -114,77 +118,88 @@
             const data = await res.json();
             allTasks = data.tasks || [];
             whitelist = data.whitelist || [];
-            checkSecurity();
+            await checkSecurity();
             renderTable();
-        } catch (e) { document.getElementById('deviceStatus').innerText = "LỖI KẾT NỐI"; }
+        } catch (e) { console.error("Lỗi khởi tạo"); }
     }
 
-    function checkSecurity() {
+    async function checkSecurity() {
         const statusEl = document.getElementById('deviceStatus');
-        
-        // Nếu ID máy hiện tại có trong whitelist (bất kể vị trí 1 hay 2)
         if (whitelist.includes(currentID)) {
             document.body.classList.remove('is-readonly');
-            statusEl.innerText = "ADMIN MODE (ID " + (whitelist.indexOf(currentID)+1) + ")";
-        } 
-        // Nếu chưa đủ 2 máy, tự động cấp quyền Admin cho máy mới
-        else if (whitelist.length < 2) {
+        } else if (whitelist.length < 2) {
             whitelist.push(currentID);
-            saveToCloud();
+            await saveToCloud();
             document.body.classList.remove('is-readonly');
-            statusEl.innerText = "ADMIN MODE (ĐÃ ĐĂNG KÝ)";
-        } 
-        // Đã đủ 2 máy và ID máy này không trùng, chuyển sang chế độ Chỉ xem
-        else {
+        } else {
             document.body.classList.add('is-readonly');
-            statusEl.innerText = "READ ONLY (ID: " + currentID + ")";
+            statusEl.innerText = "READ ONLY | " + currentID;
         }
     }
 
     async function saveToCloud() {
-        await fetch(URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
-            body: JSON.stringify({ tasks: allTasks, whitelist: whitelist })
-        });
-        document.getElementById('syncStatus').innerText = "✓";
+        try {
+            await fetch(URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
+                body: JSON.stringify({ tasks: allTasks, whitelist: whitelist })
+            });
+            document.getElementById('syncStatus').innerText = "✓";
+        } catch (e) { document.getElementById('syncStatus').innerText = "✗"; }
     }
 
     function renderTable() {
         const body = document.getElementById('taskBody');
         body.innerHTML = '';
-        [...allTasks].reverse().forEach(t => {
-            body.innerHTML += `<tr>
-                <td class="col-stt">${t.stt}</td>
-                <td><b>${t.name}</b><br><small>${t.dept || ''}</small></td>
-                <td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td>
-                <td><span class="badge" style="background:${t.status==='Hoàn thành'?'#2ecc71':'#4361ee'}">${t.status}</span></td>
-                <td class="col-8">
-                    <button class="btn-sm" style="background:#2ecc71" onclick="updateStatus('${t.id}')"><i class="fa-solid fa-check"></i></button>
-                    <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')"><i class="fa-solid fa-trash-can"></i></button>
-                </td>
-            </tr>`;
+        [...allTasks].reverse().forEach((t) => {
+            const isDone = t.status === 'Hoàn thành';
+            body.innerHTML += `
+                <tr>
+                    <td class="col-stt">${t.stt}</td>
+                    <td class="col-1"><b>${t.name}</b><br><small style="color:#64748b">${t.dept || ''}</small></td>
+                    <td>${t.start}</td>
+                    <td>${t.end}</td>
+                    <td style="text-align:center">${t.iteration}</td>
+                    <td>${t.ref || '-'}</td>
+                    <td><span class="badge" style="background:${isDone? 'var(--success)':'var(--primary)'}">${t.status}</span></td>
+                    <td class="col-8">
+                        <button class="btn-sm" style="background:var(--success)" onclick="updateStatus('${t.id}')"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-sm" style="background:var(--danger)" onclick="deleteTask('${t.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>`;
         });
     }
 
     function addTask() {
         const name = document.getElementById('taskName').value;
         if(!name) return;
-        allTasks.push({ id: Date.now().toString(), name, dept: document.getElementById('taskDept').value, start: document.getElementById('startDate').value, end: document.getElementById('deadline').value, iteration: document.getElementById('iterCount').value, status: "Đang làm", stt: allTasks.length + 1 });
-        saveToCloud(); renderTable();
+        allTasks.push({
+            id: Date.now().toString(),
+            name: name,
+            dept: document.getElementById('taskDept').value,
+            start: document.getElementById('startDate').value,
+            end: document.getElementById('deadline').value,
+            iteration: document.getElementById('iterCount').value,
+            ref: document.getElementById('taskRef').value,
+            status: "Đang làm",
+            stt: allTasks.length + 1
+        });
+        saveToCloud();
+        renderTable();
         document.getElementById('taskName').value = '';
     }
 
-    function updateStatus(id) { 
+    function updateStatus(id) {
         const task = allTasks.find(t => t.id === id);
         if(task) { task.status = "Hoàn thành"; saveToCloud(); renderTable(); }
     }
-    
-    function deleteTask(id) { 
-        if(confirm("Bạn có chắc muốn xóa?")) { 
-            allTasks = allTasks.filter(t => t.id !== id); 
-            saveToCloud(); renderTable(); 
-        } 
+
+    function deleteTask(id) {
+        if(confirm("Xác nhận xóa?")) {
+            allTasks = allTasks.filter(t => t.id !== id);
+            saveToCloud();
+            renderTable();
+        }
     }
 
     window.onload = init;
