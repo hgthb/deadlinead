@@ -36,6 +36,9 @@
         #taskRef { margin-left: -20px; }
 
         input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
+        /* Highlight ô đang nhập liệu */
+        input:focus { border-color: var(--primary); box-shadow: 0 0 3px rgba(67, 97, 238, 0.3); }
+
         .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
         
         .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -80,7 +83,7 @@
         <input type="number" id="iterCount" value="1">
         <input type="text" id="taskRef" placeholder="Tham chiếu...">
         <input type="text" id="emailRecipient" placeholder="Email nhận...">
-        <button class="btn-add" onclick="addTask()">THÊM</button>
+        <button class="btn-add" id="btnAdd" onclick="addTask()">THÊM</button>
     </div>
 
     <div class="main-content">
@@ -115,6 +118,34 @@
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
 
+    // --- LOGIC ĐIỀU KHIỂN CON TRỎ (INPUT FOCUS LOGIC) ---
+    const inputOrder = ["taskName", "taskDept", "startDate", "deadline", "iterCount", "taskRef", "emailRecipient"];
+    
+    inputOrder.forEach((id, index) => {
+        const el = document.getElementById(id);
+        
+        // Ngăn thoát khỏi ô nếu trống
+        el.addEventListener('blur', function() {
+            if (!this.value && !document.body.classList.contains('is-readonly')) {
+                setTimeout(() => this.focus(), 10);
+            }
+        });
+
+        // Nhấn Enter để nhảy ô
+        el.addEventListener('keydown', function(e) {
+            if (e.key === "Enter") {
+                if (this.value) {
+                    const nextId = inputOrder[index + 1];
+                    if (nextId) {
+                        document.getElementById(nextId).focus();
+                    } else {
+                        document.getElementById('btnAdd').focus();
+                    }
+                }
+            }
+        });
+    });
+
     function checkBrowser() {
         const ua = navigator.userAgent;
         const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
@@ -145,6 +176,11 @@
             await processAutoChecks();
             await autoCheckAndSendEmails();
             renderTable();
+            
+            // Tự động focus ô đầu tiên nếu có quyền
+            if (!document.body.classList.contains('is-readonly')) {
+                document.getElementById('taskName').focus();
+            }
         } catch (e) { console.error("Lỗi nạp dữ liệu"); }
     }
 
@@ -205,6 +241,8 @@
         });
         saveData();
         ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
+        // Reset focus về ô đầu sau khi thêm
+        document.getElementById('taskName').focus();
     }
 
     function renderTable() {
