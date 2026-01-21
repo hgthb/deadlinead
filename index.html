@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.38</title>
+    <title>Deadline manage - Version A.39</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -83,7 +83,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.38</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.39</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -248,7 +248,6 @@
         const now = new Date(); now.setHours(0,0,0,0);
         const deviceIndex = whitelist.indexOf(currentID);
 
-        // LOGIC A.38: Kiểm tra xem máy này đã "khóa" với Email nào chưa
         const lockedEmailRecord = allTasks.find(t => t.cffinish === currentID);
         const lockedEmail = lockedEmailRecord ? lockedEmailRecord.email : null;
 
@@ -261,13 +260,11 @@
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // LOGIC NÚT HOÀN THÀNH (TICK XANH)
             let completeDisabled = true;
             let completeTitle = "Không có quyền";
             
-            if (deviceIndex >= 3) { // ID4 trở lên
+            if (deviceIndex >= 3) { 
                 if (isDoing) {
-                    // Nếu máy này chưa khóa email nào -> Cho phép bấm mọi việc có cffinish rỗng
                     if (!lockedEmail) {
                         if (!t.cffinish) {
                             completeDisabled = false;
@@ -275,9 +272,7 @@
                         } else {
                             completeTitle = "Việc này thuộc máy ID khác";
                         }
-                    } 
-                    // Nếu máy này ĐÃ KHÓA với 1 email -> Chỉ cho phép bấm việc của email đó
-                    else {
+                    } else {
                         if (t.email === lockedEmail) {
                             completeDisabled = false;
                             completeTitle = "Hoàn thành";
@@ -292,7 +287,6 @@
                 }
             }
 
-            // LOGIC NÚT XÓA (DELETE) - Giữ nguyên A.36
             let deleteDisabled = true;
             let deleteTitle = "Không có quyền";
             if (deviceIndex < 3) { 
@@ -303,7 +297,10 @@
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt || (allTasks.length - index)}</td>
-                    <td class="col-1"><b>${t.name}</b><br><small>${t.dept || ''}</small></td>
+                    <td class="col-1">
+                        <b>${t.name}</b><br>
+                        <small>${(t.dept || '') + "   - " + (t.email || '')}</small>
+                    </td>
                     <td class="col-2">${t.start}</td>
                     <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${t.end}</td>
                     <td class="col-4">${t.iteration}</td>
@@ -337,14 +334,11 @@
         
         if(confirm("Xác nhận hoàn thành công việc và ĐỊNH DANH thiết bị này cho Email: " + task.email + "?")) { 
             const userEmail = task.email;
-            
-            // QUÉT LẠI TOÀN BỘ DỮ LIỆU: Gán cffinish cho mọi record cùng Email
             allTasks.forEach(t => {
                 if (t.email === userEmail) {
                     t.cffinish = currentID;
                 }
             });
-
             task.status = "Hoàn thành"; 
             saveData(); 
         } 
