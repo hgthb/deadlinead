@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.35</title>
+    <title>Deadline manage - Version A.36</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,28 +15,27 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
+        /* Form và nút thêm chỉ dành cho ID1, ID2, ID3 */
         body.is-readonly #adminForm, 
-        body.is-readonly .btn-add,
-        body.is-readonly .btn-del,
-        body.is-readonly .btn-mail { 
+        body.is-readonly .btn-add { 
             pointer-events: none !important; 
             filter: grayscale(1) opacity(0.3) !important; 
             cursor: not-allowed !important;
         }
-        
-        /* Cho phép tương tác với các nút chức năng để check trạng thái disabled */
-        .btn-complete, .btn-del { 
-            pointer-events: auto !important; 
-            filter: none !important; 
-            opacity: 1 !important; 
-            cursor: pointer !important; 
+
+        /* Cấu hình chung cho nút nhỏ */
+        .btn-sm { 
+            pointer-events: auto; 
+            opacity: 1; 
+            cursor: pointer; 
         }
 
-        /* Hiệu ứng làm mờ chung cho các nút bị disabled */
+        /* Hiệu ứng làm mờ khi nút bị vô hiệu hóa */
         .btn-sm:disabled {
-            opacity: 0.3 !important;
+            opacity: 0.2 !important;
             cursor: not-allowed !important;
             filter: grayscale(1) !important;
+            pointer-events: none !important;
         }
 
         body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
@@ -73,7 +72,7 @@
 
         .overdue-row { background-color: #fff1f2 !important; }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 80px; text-align: center; }
-        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
+        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
         .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
     </style>
@@ -91,7 +90,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.35</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.36</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -262,17 +261,33 @@
     function renderTable() {
         const body = document.getElementById('taskBody'); body.innerHTML = '';
         const now = new Date(); now.setHours(0,0,0,0);
+        const deviceIndex = whitelist.indexOf(currentID);
+
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
             const isStatusOverdue = (t.status === 'Quá hạn');
+            const isDoing = (t.status === 'Đang làm');
+            
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
-            const mailTooltip = t.alertSent ? "Đã gửi thư nhắc nhở" : "Gửi thư nhắc việc quá hạn";
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // Giao diện nút Hoàn thành
-            const completeBtnColor = isStatusOverdue ? 'var(--danger)' : 'var(--success)';
-            const completeBtnTitle = isStatusOverdue ? 'Quá hạn (Không thể xác nhận)' : 'Hoàn thành';
+            // LOGIC NÚT HOÀN THÀNH (TICK XANH)
+            let completeDisabled = true;
+            let completeTitle = "Không có quyền";
+            if (deviceIndex >= 3) { // ID4 trở lên
+                if (isDoing) { completeDisabled = false; completeTitle = "Hoàn thành"; }
+                else if (isStatusOverdue) { completeTitle = "Quá hạn (Không thể báo cáo)"; }
+                else { completeTitle = "Đã hoàn thành"; }
+            }
+
+            // LOGIC NÚT XÓA (DELETE)
+            let deleteDisabled = true;
+            let deleteTitle = "Không có quyền";
+            if (deviceIndex < 3) { // ID1, ID2, ID3
+                if (isDoing) { deleteDisabled = false; deleteTitle = "Xóa"; }
+                else { deleteTitle = "Dữ liệu KPI (Không được xóa)"; }
+            }
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -286,18 +301,18 @@
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <button class="btn-sm btn-complete" 
-                                style="background:${completeBtnColor}" 
+                                style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
                                 onclick="confirmComplete('${t.id}')" 
-                                ${isDone || isStatusOverdue ? 'disabled' : ''} 
-                                title="${completeBtnTitle}">
+                                ${completeDisabled ? 'disabled' : ''} 
+                                title="${completeTitle}">
                             <i class="fa-solid fa-check"></i>
                         </button>
-                        ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                        ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="Gửi mail nhắc nhở"><i class="fa-solid fa-envelope"></i></button>` : ''}
                         <button class="btn-sm btn-del" 
                                 style="background:#ef476f" 
                                 onclick="deleteTask('${t.id}')" 
-                                ${isStatusOverdue ? 'disabled' : ''} 
-                                title="${isStatusOverdue ? 'Quá hạn (Không thể xóa)' : 'Xóa'}">
+                                ${deleteDisabled ? 'disabled' : ''} 
+                                title="${deleteTitle}">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </td>
@@ -312,7 +327,7 @@
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
-        if(!task || task.status === "Quá hạn") return;
+        if(!task) return;
         if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
             task.status = "Hoàn thành"; 
             saveData(); 
@@ -321,13 +336,17 @@
 
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
-        if(!t || t.status === "Quá hạn") return; // Chặn xóa công việc quá hạn
+        if(!t) return;
 
         const deviceIndex = whitelist.indexOf(currentID);
-        if (deviceIndex === 2) {
-            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h!");
+        if (deviceIndex === 2) { // Ràng buộc riêng cho ID3
+            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h từ lúc tạo!");
         }
-        if(confirm("Xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
+        
+        if(confirm("Xác nhận xóa bản ghi này?")) { 
+            allTasks = allTasks.filter(x => x.id !== id); 
+            saveData(); 
+        }
     }
     window.onload = fetchData;
 </script>
