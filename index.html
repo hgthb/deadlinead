@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.34</title>
+    <title>Deadline manage - Version A.35</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -24,18 +24,19 @@
             cursor: not-allowed !important;
         }
         
-        .btn-complete { 
+        /* Cho phép tương tác với các nút chức năng để check trạng thái disabled */
+        .btn-complete, .btn-del { 
             pointer-events: auto !important; 
             filter: none !important; 
             opacity: 1 !important; 
             cursor: pointer !important; 
         }
 
-        /* Làm mờ nút khi bị disabled (trường hợp quá hạn hoặc đã xong) */
-        .btn-complete:disabled {
+        /* Hiệu ứng làm mờ chung cho các nút bị disabled */
+        .btn-sm:disabled {
             opacity: 0.3 !important;
             cursor: not-allowed !important;
-            filter: grayscale(0.5);
+            filter: grayscale(1) !important;
         }
 
         body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
@@ -90,7 +91,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.34</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.35</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -264,14 +265,14 @@
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
-            let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
+            const isStatusOverdue = (t.status === 'Quá hạn');
+            let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             const mailTooltip = t.alertSent ? "Đã gửi thư nhắc nhở" : "Gửi thư nhắc việc quá hạn";
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // ĐIỀU CHỈNH LOGIC KHÓA NÚT KHI QUÁ HẠN
-            const isLockedOverdue = (t.status === 'Quá hạn');
-            const completeBtnColor = isLockedOverdue ? 'var(--danger)' : 'var(--success)';
-            const completeBtnTitle = isLockedOverdue ? 'Quá hạn (Không thể xác nhận)' : 'Hoàn thành';
+            // Giao diện nút Hoàn thành
+            const completeBtnColor = isStatusOverdue ? 'var(--danger)' : 'var(--success)';
+            const completeBtnTitle = isStatusOverdue ? 'Quá hạn (Không thể xác nhận)' : 'Hoàn thành';
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -287,12 +288,18 @@
                         <button class="btn-sm btn-complete" 
                                 style="background:${completeBtnColor}" 
                                 onclick="confirmComplete('${t.id}')" 
-                                ${isDone || isLockedOverdue ? 'disabled' : ''} 
+                                ${isDone || isStatusOverdue ? 'disabled' : ''} 
                                 title="${completeBtnTitle}">
                             <i class="fa-solid fa-check"></i>
                         </button>
                         ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
-                        <button class="btn-sm btn-del" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                        <button class="btn-sm btn-del" 
+                                style="background:#ef476f" 
+                                onclick="deleteTask('${t.id}')" 
+                                ${isStatusOverdue ? 'disabled' : ''} 
+                                title="${isStatusOverdue ? 'Quá hạn (Không thể xóa)' : 'Xóa'}">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </td>
                 </tr>`;
         });
@@ -305,7 +312,7 @@
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
-        if(!task || task.status === "Quá hạn") return; // Bảo mật thêm ở lớp xử lý
+        if(!task || task.status === "Quá hạn") return;
         if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
             task.status = "Hoàn thành"; 
             saveData(); 
@@ -314,6 +321,8 @@
 
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
+        if(!t || t.status === "Quá hạn") return; // Chặn xóa công việc quá hạn
+
         const deviceIndex = whitelist.indexOf(currentID);
         if (deviceIndex === 2) {
             if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h!");
