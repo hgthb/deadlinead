@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.46</title>
+    <title>Deadline manage - Version A.48</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -39,7 +39,7 @@
 
         input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
         
-        /* ÉP ĐỊNH DẠNG DD/MM/YYYY TRÊN Ô NHẬP DATE */
+        /* GIỮ NGUYÊN CSS ĐỊNH DẠNG NGÀY CỦA A.46 */
         input[type="date"] { position: relative; }
         input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
         input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
@@ -70,13 +70,16 @@
 
         .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
+
+        /* Class cho ID4+ bị khóa email */
+        .mail-disabled { opacity: 0.2 !important; pointer-events: none !important; filter: grayscale(1); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.46</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.48</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -152,10 +155,32 @@
     async function processAutoChecks() {
         const now = new Date(); now.setHours(0,0,0,0);
         let changed = false;
-        allTasks.forEach(t => {
+        
+        // Xác định quyền ID3- (index 0, 1, 2)
+        const myIndex = whitelist.indexOf(currentID);
+        const isID3Minus = (myIndex !== -1 && myIndex <= 2);
+
+        for (let t of allTasks) {
             const d = new Date(t.end); d.setHours(0,0,0,0);
-            if (d < now && t.status === "Đang làm") { t.status = "Quá hạn"; changed = true; }
-        });
+            
+            // Logic Quá hạn
+            if (d < now && t.status === "Đang làm") { 
+                t.status = "Quá hạn"; 
+                changed = true; 
+            }
+
+            // Logic Tự động gửi Email cho ID3-
+            if (isID3Minus && t.status === "Quá hạn" && !t.alertSent) {
+                try {
+                    console.log("Auto sending mail for: " + t.name);
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { 
+                        task_name: t.name, deadline: formatDateDisplay(t.end), ref: t.ref, dept: t.dept, to_email: t.email 
+                    });
+                    t.alertSent = true;
+                    changed = true;
+                } catch (err) { console.error("Auto mail fail:", err); }
+            }
+        }
         if (changed) await silentSave();
     }
 
@@ -188,6 +213,9 @@
         const now = new Date(); now.setHours(0,0,0,0);
         const deviceIndex = whitelist.indexOf(currentID);
         const lockedEmail = (allTasks.find(t => t.cffinish === currentID))?.email;
+        
+        // Định nghĩa quyền Email: ID3- (index <= 2) được quyền, ID4+ (index >= 3) bị khóa
+        const canSendMail = (deviceIndex !== -1 && deviceIndex <= 2);
 
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
@@ -203,6 +231,14 @@
             const isRaiseVisible = isStatusOverdue;
             const canRaise = deviceIndex >= 3 && isStatusOverdue;
             const handTitle = t.comment ? `Giải trình: ${t.comment}` : "Bấm để giải trình quá hạn";
+
+            // Logic hiển thị nút Email
+            // Nếu là ID4+ -> thêm class mail-disabled
+            const mailBtnClass = canSendMail ? '' : 'mail-disabled';
+            // Màu sắc: Đã gửi -> Xám, Chưa gửi -> Vàng
+            const mailBtnBg = t.alertSent ? '#94a3b8' : 'var(--warning)';
+            const mailBtnColor = t.alertSent ? 'white' : 'black';
+            const mailTitle = t.alertSent ? 'Đã gửi email nhắc việc' : 'Gửi email nhắc việc';
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -223,7 +259,13 @@
                                 onclick="confirmComplete('${t.id}')" ${compDisable ? 'disabled' : ''} title="Hoàn thành">
                             <i class="fa-solid fa-check"></i>
                         </button>
-                        ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent?'#94a3b8':'var(--warning)'}; color:black" onclick="sendManualMail('${t.id}')" title="Gửi mail"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                        
+                        ${isOverdue ? `
+                        <button class="btn-sm ${mailBtnClass}" style="background:${mailBtnBg}; color:${mailBtnColor}" 
+                                onclick="sendManualMail('${t.id}')" title="${mailTitle}">
+                            <i class="fa-solid fa-envelope"></i>
+                        </button>` : ''}
+
                         <button class="btn-sm" style="background:#ef476f" 
                                 onclick="deleteTask('${t.id}')" ${deviceIndex >= 3 || !isDoing ? 'disabled' : ''} title="Xóa">
                             <i class="fa-solid fa-trash-can"></i>
@@ -256,9 +298,21 @@
 
     async function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
-        if(confirm("Gửi thư nhắc việc?")) {
-            const res = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: t.end, ref: t.ref, dept: t.dept, to_email: t.email });
-            if(res.status === 200) { t.alertSent = true; await silentSave(); renderTable(); alert("Đã gửi!"); }
+        // Hộp thoại xác nhận tùy theo trạng thái đã gửi hay chưa
+        const msg = t.alertSent 
+            ? "Email này ĐÃ ĐƯỢC GỬI. Bạn có chắc chắn muốn gửi lại thủ công không?" 
+            : "Xác nhận gửi email nhắc việc?";
+            
+        if(confirm(msg)) {
+            const res = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { 
+                task_name: t.name, deadline: formatDateDisplay(t.end), ref: t.ref, dept: t.dept, to_email: t.email 
+            });
+            if(res.status === 200) { 
+                t.alertSent = true; 
+                await silentSave(); 
+                renderTable(); 
+                alert("Đã gửi email thành công!"); 
+            }
         }
     }
 
