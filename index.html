@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.49</title>
+    <title>Deadline manage - Version A.50</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
-        #browserGuard {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
-        }
+        /* CSS Modal Report */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 1200px; border-radius: 8px; max-height: 85vh; display: flex; flex-direction: column; }
+        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; align-self: flex-end; }
+        .close-modal:hover { color: black; }
+        .report-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 10px; border-radius: 6px; }
+        .report-result-container { overflow-y: auto; flex-grow: 1; border: 1px solid #eee; }
 
         body.is-readonly #adminForm, body.is-readonly .btn-add { 
             pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; cursor: not-allowed !important;
@@ -37,9 +40,9 @@
         #iterCount { margin-left: -18px; }
         #taskRef { margin-left: -20px; }
 
-        input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
+        input, select { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
+        #adminForm input { width: 100%; }
         
-        /* GIỮ NGUYÊN CSS ĐỊNH DẠNG NGÀY CỦA A.46/A.48 */
         input[type="date"] { position: relative; }
         input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
         input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
@@ -47,6 +50,7 @@
         input[type="date"]::-webkit-datetime-edit-text { order: 1.5; }
 
         .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
+        .btn-report { background: #64748b; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; margin-right: 5px; cursor: pointer; }
         
         .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -78,8 +82,11 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.49</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
-        <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
+        <div class="brand">📋 <b>PROJECT A.50</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div>
+            <button class="btn-report" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
+            <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
+        </div>
     </div>
 
     <div id="adminForm">
@@ -113,6 +120,42 @@
     </div>
 </div>
 
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeReportModal()">&times;</span>
+        <h2 style="margin-top:0">Báo cáo tổng hợp</h2>
+        <div class="report-controls">
+            <label>Từ ngày (Deadline):</label> <input type="date" id="repStartDate">
+            <label>Đến ngày:</label> <input type="date" id="repEndDate">
+            <label>Trạng thái:</label> 
+            <select id="repStatus">
+                <option value="All">Tất cả</option>
+                <option value="Đang làm">Đang làm</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Quá hạn">Quá hạn</option>
+            </select>
+            <button class="btn-add" style="width: 100px;" onclick="generateReport()">Xem Báo Cáo</button>
+        </div>
+        <div class="report-result-container">
+            <table id="reportTable">
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th class="col-1">Việc / Bộ phận - Email</th>
+                        <th class="col-2">Bắt đầu</th>
+                        <th class="col-3">Hạn chót</th>
+                        <th class="col-4">Lần</th>
+                        <th class="col-5">Tham chiếu</th>
+                        <th class="col-6">Tiến độ</th>
+                        <th class="col-7">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
     const EMAILJS_PUBLIC_KEY = 'K29qboR4uZpsyMu0Z', EMAILJS_SERVICE_ID = 'service_s73hjtp', EMAILJS_TEMPLATE_ID = 'template_0cgys98';
     const BIN_ID = '6965ac34d0ea881f4067e559', READ_KEY = '$2a$10$E020cSPDeHQd0G9ytrUj3u1YSFJN0d9sP3X0B38kOk.sZoVNqZn8K', MASTER_KEY = '$2a$10$zN5MZaAsLugTkyNZA0ZHMu7CKiAktxDFCw1IGFEi4H46JOocrLTSy';
@@ -120,8 +163,6 @@
 
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
-
-    // Danh sách ID các ô nhập liệu theo thứ tự trái -> phải
     const INPUT_FIELDS = ['taskName', 'taskDept', 'startDate', 'deadline', 'iterCount', 'taskRef', 'emailRecipient'];
 
     function formatDateDisplay(dateStr) {
@@ -143,11 +184,10 @@
             allTasks = data.tasks || []; whitelist = data.whitelist || [];
             await silentSecurityCheck();
             
-            // Nếu là ID3- (index <= 2), thiết lập logic nhập liệu
             const idx = whitelist.indexOf(currentID);
             if (idx !== -1 && idx <= 2) {
                 setupInputFlow();
-                document.getElementById('taskName').focus(); // Focus ngay khi mở
+                document.getElementById('taskName').focus();
             }
 
             await processAutoChecks();
@@ -155,32 +195,24 @@
         } catch (e) { console.error("Lỗi dữ liệu"); }
     }
 
-    // Hàm thiết lập chuyển ô khi nhấn Enter
     function setupInputFlow() {
         INPUT_FIELDS.forEach((id, index) => {
             const el = document.getElementById(id);
-            // Xóa sự kiện cũ để tránh trùng lặp nếu gọi lại (dù ở đây chỉ gọi 1 lần)
             const newEl = el.cloneNode(true);
             el.parentNode.replaceChild(newEl, el);
-
             newEl.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     if (this.value.trim() !== '') {
                         if (index < INPUT_FIELDS.length - 1) {
-                            // Chuyển sang ô kế tiếp
                             document.getElementById(INPUT_FIELDS[index + 1]).focus();
                         } else {
-                            // Ô cuối cùng -> Click nút Thêm
                             document.getElementById('btnAdd').click();
                         }
                     }
-                    // Nếu rỗng -> Không làm gì (giữ nguyên focus)
                 }
             });
         });
-        // Gán lại sự kiện onclick cho nút btnAdd vì logic input có thể ghi đè
-        // Tuy nhiên btnAdd nằm ngoài loop input nên không ảnh hưởng, nhưng input Enter gọi click() thì ok.
     }
 
     async function silentSecurityCheck() {
@@ -235,11 +267,7 @@
         });
         
         saveData();
-
-        // REFRESH CHƯƠNG TRÌNH (Làm sạch ô nhập) và RESET CON TRỎ
-        INPUT_FIELDS.forEach(id => {
-            document.getElementById(id).value = (id === 'iterCount') ? '1' : '';
-        });
+        INPUT_FIELDS.forEach(id => { document.getElementById(id).value = (id === 'iterCount') ? '1' : ''; });
         document.getElementById('taskName').focus();
     }
 
@@ -301,6 +329,80 @@
                 </tr>`;
         });
     }
+
+    // --- REPORT FUNCTIONS ---
+    function openReportModal() {
+        document.getElementById('reportModal').style.display = "block";
+        // Mặc định ngày hiện tại
+        document.getElementById('repStartDate').value = "";
+        document.getElementById('repEndDate').value = "";
+        document.getElementById('reportBody').innerHTML = "";
+    }
+
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = "none";
+    }
+
+    function generateReport() {
+        const start = document.getElementById('repStartDate').value;
+        const end = document.getElementById('repEndDate').value;
+        const status = document.getElementById('repStatus').value;
+        const body = document.getElementById('reportBody');
+        body.innerHTML = "";
+
+        if(start && end && start > end) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+
+        const sDate = start ? new Date(start) : null; 
+        if(sDate) sDate.setHours(0,0,0,0);
+        const eDate = end ? new Date(end) : null; 
+        if(eDate) eDate.setHours(23,59,59,999);
+
+        let filtered = allTasks.filter(t => {
+            const tDate = new Date(t.end); tDate.setHours(0,0,0,0);
+            
+            // Lọc theo ngày (nếu có chọn)
+            let dateMatch = true;
+            if(sDate && tDate < sDate) dateMatch = false;
+            if(eDate && tDate > eDate) dateMatch = false;
+
+            // Lọc theo trạng thái
+            let statusMatch = (status === "All") ? true : (t.status === status);
+
+            return dateMatch && statusMatch;
+        });
+
+        if(filtered.length === 0) {
+            body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không tìm thấy dữ liệu phù hợp</td></tr>";
+            return;
+        }
+
+        // Render Report Table (Không có cột thao tác)
+        filtered.forEach((t, index) => {
+            const isDone = t.status === 'Hoàn thành';
+            let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
+            
+            body.innerHTML += `
+                <tr>
+                    <td class="col-stt">${index + 1}</td>
+                    <td class="col-1"><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td>
+                    <td class="col-2">${formatDateDisplay(t.start)}</td>
+                    <td class="col-3">${formatDateDisplay(t.end)}</td>
+                    <td class="col-4">${t.iteration}</td>
+                    <td class="col-5">${t.ref || ''}</td>
+                    <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
+                    <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
+                </tr>`;
+        });
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('reportModal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+    // ------------------------
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
