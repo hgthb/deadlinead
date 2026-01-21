@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.44</title>
+    <title>Deadline manage - Version A.45</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
+        #browserGuard { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; }
+
         body.is-readonly #adminForm, body.is-readonly .btn-add { 
             pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; cursor: not-allowed !important;
         }
@@ -35,8 +34,17 @@
         #iterCount { margin-left: -18px; }
         #taskRef { margin-left: -20px; }
 
-        input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; background: white !important; }
-        .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
+        
+        /* Cải thiện hiển thị dd/mm/yyyy cho thẻ date */
+        input[type="date"] { position: relative; }
+        input[type="date"]::before {
+            content: attr(placeholder);
+            position: absolute; color: #aaa; font-size: 11px;
+        }
+        input[type="date"]:focus::before, input[type="date"]:valid::before { content: ""; }
+
+        .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
         
         .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -65,15 +73,15 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.44</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.45</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
         <input type="text" id="taskDept" placeholder="Bộ phận/người xử lý..">
-        <input type="text" id="startDate" placeholder="Ngày bắt đầu">
-        <input type="text" id="deadline" placeholder="Hạn chót">
+        <input type="date" id="startDate" lang="vi-VN" placeholder="Bắt đầu">
+        <input type="date" id="deadline" lang="vi-VN" placeholder="Hạn chót">
         <input type="number" id="iterCount" value="1">
         <input type="text" id="taskRef" placeholder="Tham chiếu...">
         <input type="text" id="emailRecipient" placeholder="Email nhận...">
@@ -101,21 +109,15 @@
 </div>
 
 <script>
-    const BIN_ID = '6965ac34d0ea881f4067e559';
-    const READ_KEY = '$2a$10$E020cSPDeHQd0G9ytrUj3u1YSFJN0d9sP3X0B38kOk.sZoVNqZn8K', MASTER_KEY = '$2a$10$zN5MZaAsLugTkyNZA0ZHMu7CKiAktxDFCw1IGFEi4H46JOocrLTSy';
+    const BIN_ID = '6965ac34d0ea881f4067e559', READ_KEY = '$2a$10$E020cSPDeHQd0G9ytrUj3u1YSFJN0d9sP3X0B38kOk.sZoVNqZn8K', MASTER_KEY = '$2a$10$zN5MZaAsLugTkyNZA0ZHMu7CKiAktxDFCw1IGFEi4H46JOocrLTSy';
     const URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
 
     let allTasks = [], whitelist = [];
 
-    // Khởi tạo bảng lịch cho 2 ô nhập ngày tháng
-    const fpConfig = { dateFormat: "d/m/Y", locale: "vn", allowInput: true };
-    flatpickr("#startDate", fpConfig);
-    flatpickr("#deadline", fpConfig);
-
-    function parseDateISO(vnDate) {
-        if (!vnDate) return "";
-        const p = vnDate.split('/');
-        return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : "";
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return "";
+        const parts = dateStr.split('-');
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
     }
 
     const currentID = (() => {
@@ -145,8 +147,8 @@
     function processAutoChecks() {
         const now = new Date(); now.setHours(0,0,0,0);
         allTasks.forEach(t => {
-            const d = new Date(parseDateISO(t.end));
-            if (d < now && t.status === "Đang làm") { t.status = "Quá hạn"; }
+            const d = new Date(t.end);
+            if (d < now && t.status === "Đang làm") t.status = "Quá hạn";
         });
     }
 
@@ -156,17 +158,17 @@
 
     function addTask() {
         const n = document.getElementById('taskName').value, s = document.getElementById('startDate').value, e = document.getElementById('deadline').value;
-        if(!n || !s || !e) return alert("Vui lòng nhập đủ thông tin ngày tháng!");
+        if(!n || !s || !e) return alert("Thiếu thông tin!");
         allTasks.push({
             id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: document.getElementById('emailRecipient').value,
             start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value,
-            status: "Đang làm", stt: allTasks.length + 1, createdAt: new Date().toISOString(), cffinish: "", comment: ""
+            status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), cffinish: "", comment: ""
         });
         saveData();
     }
 
     async function saveData() {
-        document.getElementById('syncStatus').innerText = "Đồng bộ...";
+        document.getElementById('syncStatus').innerText = "Đang đồng bộ...";
         await silentSave();
         document.getElementById('syncStatus').innerText = "";
         renderTable();
@@ -179,7 +181,7 @@
         const lockedEmail = (allTasks.find(t => t.cffinish === currentID))?.email;
 
         [...allTasks].reverse().forEach((t, index) => {
-            const isOverdue = new Date(parseDateISO(t.end)) < now && t.status !== "Hoàn thành";
+            const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành', isStatusOverdue = (t.status === 'Quá hạn'), isDoing = (t.status === 'Đang làm');
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             
@@ -193,15 +195,15 @@
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt || (allTasks.length - index)}</td>
                     <td class="col-1"><b>${t.name}</b><br><small>${t.dept}   - ${t.email}</small></td>
-                    <td class="col-2">${t.start}</td>
-                    <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${t.end}</td>
+                    <td class="col-2">${formatDateDisplay(t.start)}</td>
+                    <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${formatDateDisplay(t.end)}</td>
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7">
                         <span class="badge" style="background:${statusColor}">${t.status}</span>
                         <i class="fa-solid fa-hand-paper hand-icon ${isStatusOverdue?'show':''} ${deviceIndex>=3?'active':''} ${t.comment?'has-comment':''}" 
-                           title="${t.comment || 'Bấm để giải trình'}" onclick="${(deviceIndex>=3 && isStatusOverdue) ? `raiseHand('${t.id}')` : ''}"></i>
+                           title="${t.comment || 'Bấm giải trình'}" onclick="${(deviceIndex>=3 && isStatusOverdue) ? `raiseHand('${t.id}')` : ''}"></i>
                     </td>
                     <td class="col-8">
                         <button class="btn-sm" style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
