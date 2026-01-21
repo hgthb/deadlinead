@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.32</title>
+    <title>Deadline manage - Version A.33</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,8 +15,6 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
-        /* THAY ĐỔI QUAN TRỌNG: Không chặn pointer-events trên body nữa */
-        /* Chỉ chặn trên các phần tử không được phép cho ID4 trở đi */
         body.is-readonly #adminForm, 
         body.is-readonly .btn-add,
         body.is-readonly .btn-del,
@@ -26,7 +24,6 @@
             cursor: not-allowed !important;
         }
         
-        /* Nút hoàn thành luôn được phép tương tác */
         .btn-complete { 
             pointer-events: auto !important; 
             filter: none !important; 
@@ -86,7 +83,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.32</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.33</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -137,11 +134,6 @@
     
     inputOrder.forEach((id, index) => {
         const el = document.getElementById(id);
-        el.addEventListener('blur', function() {
-            if (!this.value && !document.body.classList.contains('is-readonly')) {
-                setTimeout(() => this.focus(), 10);
-            }
-        });
         el.addEventListener('keydown', function(e) {
             if (e.key === "Enter") {
                 if (this.value) {
@@ -269,6 +261,10 @@
             const mailTooltip = t.alertSent ? "Đã gửi thư nhắc nhở" : "Gửi thư nhắc việc quá hạn";
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
+            // ĐIỀU CHỈNH NÚT TICK XANH THEO TRẠNG THÁI
+            const completeBtnColor = (t.status === 'Quá hạn') ? 'var(--danger)' : 'var(--success)';
+            const completeBtnTitle = (t.status === 'Quá hạn') ? 'Quá hạn' : 'Hoàn thành';
+
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt || (allTasks.length - index)}</td>
@@ -280,7 +276,7 @@
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
-                        <button class="btn-sm btn-complete" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''} title="Hoàn thành"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-sm btn-complete" style="background:${completeBtnColor}" onclick="confirmComplete('${t.id}')" ${isDone ? 'disabled' : ''} title="${completeBtnTitle}"><i class="fa-solid fa-check"></i></button>
                         ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
                         <button class="btn-sm btn-del" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
