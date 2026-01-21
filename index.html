@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.30</title>
+    <title>Deadline manage - Version A.32</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,16 +15,18 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
-        /* Chế độ Read-only cho ID4 trở đi */
+        /* THAY ĐỔI QUAN TRỌNG: Không chặn pointer-events trên body nữa */
+        /* Chỉ chặn trên các phần tử không được phép cho ID4 trở đi */
         body.is-readonly #adminForm, 
         body.is-readonly .btn-add,
-        body.is-readonly .btn-sm:not(.btn-complete) { 
+        body.is-readonly .btn-del,
+        body.is-readonly .btn-mail { 
             pointer-events: none !important; 
             filter: grayscale(1) opacity(0.3) !important; 
             cursor: not-allowed !important;
         }
         
-        /* Đảm bảo nút tick xanh LUÔN HOẠT ĐỘNG cho mọi ID */
+        /* Nút hoàn thành luôn được phép tương tác */
         .btn-complete { 
             pointer-events: auto !important; 
             filter: none !important; 
@@ -84,7 +86,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.30</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.32</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -184,9 +186,6 @@
             await processAutoChecks();
             await autoCheckAndSendEmails();
             renderTable();
-            if (!document.body.classList.contains('is-readonly')) {
-                document.getElementById('taskName').focus();
-            }
         } catch (e) { console.error("Lỗi nạp dữ liệu"); }
     }
 
@@ -258,7 +257,6 @@
         });
         saveData();
         ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('taskName').focus();
     }
 
     function renderTable() {
@@ -283,8 +281,8 @@
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <button class="btn-sm btn-complete" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''} title="Hoàn thành"><i class="fa-solid fa-check"></i></button>
-                        ${isOverdue ? `<button class="btn-sm" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
-                        <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
+                        ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                        <button class="btn-sm btn-del" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 </tr>`;
         });
@@ -296,7 +294,6 @@
     }
 
     function confirmComplete(id) { 
-        // Logic mới: Đảm bảo click luôn được ghi nhận
         const task = allTasks.find(x => x.id === id);
         if(!task) return;
         if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
