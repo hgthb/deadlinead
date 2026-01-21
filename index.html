@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.42</title>
+    <title>Deadline manage - Version A.46</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -39,9 +39,12 @@
 
         input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
         
-        /* Cố gắng định dạng ngày tháng hiển thị trong ô nhập */
-        input[type="date"]::-webkit-datetime-edit { padding: 1px; }
-        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+        /* ÉP ĐỊNH DẠNG DD/MM/YYYY TRÊN Ô NHẬP DATE */
+        input[type="date"] { position: relative; }
+        input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
+        input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
+        input[type="date"]::-webkit-datetime-edit-day-field { order: 1; }
+        input[type="date"]::-webkit-datetime-edit-text { order: 1.5; }
 
         .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
         
@@ -60,8 +63,8 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 75px; text-align: center; }
         .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
         
-        .hand-icon { font-size: 14px; margin-left: 5px; color: #cbd5e1; display: none; } /* Mặc định ẩn */
-        .hand-icon.show { display: inline-block; } /* Chỉ hiện khi có class show */
+        .hand-icon { font-size: 14px; margin-left: 5px; color: #cbd5e1; display: none; } 
+        .hand-icon.show { display: inline-block; } 
         .hand-icon.active { color: var(--warning); cursor: pointer; }
         .hand-icon.has-comment { color: var(--primary); }
 
@@ -71,21 +74,17 @@
 </head>
 <body>
 
-<div id="browserGuard">
-    <h2>Trình duyệt không hỗ trợ</h2>
-</div>
-
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.42</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.46</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
         <input type="text" id="taskDept" placeholder="Bộ phận/người xử lý..">
-        <input type="date" id="startDate" lang="vi-VN">
-        <input type="date" id="deadline" lang="vi-VN">
+        <input type="date" id="startDate">
+        <input type="date" id="deadline">
         <input type="number" id="iterCount" value="1">
         <input type="text" id="taskRef" placeholder="Tham chiếu...">
         <input type="text" id="emailRecipient" placeholder="Email nhận...">
@@ -120,7 +119,6 @@
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
 
-    // Chuyển YYYY-MM-DD -> DD/MM/YYYY
     function formatDateDisplay(dateStr) {
         if (!dateStr) return "";
         const parts = dateStr.split('-');
@@ -196,14 +194,12 @@
             const isDone = t.status === 'Hoàn thành', isStatusOverdue = (t.status === 'Quá hạn'), isDoing = (t.status === 'Đang làm');
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             
-            // Logic Nút Hoàn Thành (Kế thừa A.39/A.41)
             let compDisable = true;
             if (deviceIndex >= 3 && isDoing) {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // Logic Raise Hand - Chỉnh sửa A.42: Chỉ hiện khi quá hạn
             const isRaiseVisible = isStatusOverdue;
             const canRaise = deviceIndex >= 3 && isStatusOverdue;
             const handTitle = t.comment ? `Giải trình: ${t.comment}` : "Bấm để giải trình quá hạn";
@@ -239,7 +235,6 @@
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
-        // Chỉnh sửa thông báo A.42
         if(confirm("Bạn xác nhận đã hoàn thành ?")) { 
             allTasks.forEach(t => { if (t.email === task.email) t.cffinish = currentID; });
             task.status = "Hoàn thành"; saveData(); 
