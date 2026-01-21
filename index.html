@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.37</title>
+    <title>Deadline manage - Version A.38</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -83,7 +83,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.37</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.38</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -158,15 +158,6 @@
         return id;
     }
     const currentID = getDeviceID();
-
-    window.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.shiftKey && e.code === 'KeyR' && whitelist.length > 0 && whitelist[0] === currentID) {
-            if (prompt("XÁC NHẬN MẬT MÃ RESET WHITELIST:") === "Hadmin123456$") { 
-                whitelist = []; 
-                silentSave().then(() => location.reload()); 
-            }
-        }
-    });
 
     async function fetchData() {
         checkBrowser();
@@ -246,7 +237,7 @@
             id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: document.getElementById('emailRecipient').value,
             start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value,
             status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID,
-            cffinish: "" // BIẾN MỚI A.37
+            cffinish: "" 
         });
         saveData();
         ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
@@ -257,6 +248,10 @@
         const now = new Date(); now.setHours(0,0,0,0);
         const deviceIndex = whitelist.indexOf(currentID);
 
+        // LOGIC A.38: Kiểm tra xem máy này đã "khóa" với Email nào chưa
+        const lockedEmailRecord = allTasks.find(t => t.cffinish === currentID);
+        const lockedEmail = lockedEmailRecord ? lockedEmailRecord.email : null;
+
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
@@ -266,18 +261,29 @@
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // LOGIC NÚT HOÀN THÀNH (TICK XANH) - Cập nhật A.37
+            // LOGIC NÚT HOÀN THÀNH (TICK XANH)
             let completeDisabled = true;
             let completeTitle = "Không có quyền";
             
             if (deviceIndex >= 3) { // ID4 trở lên
                 if (isDoing) {
-                    // Nếu chưa được gán ID nào (cffinish rỗng) HOẶC ID đang dùng khớp với ID đã gán
-                    if (!t.cffinish || t.cffinish === currentID) {
-                        completeDisabled = false;
-                        completeTitle = "Hoàn thành";
-                    } else {
-                        completeTitle = "Việc này thuộc máy ID khác";
+                    // Nếu máy này chưa khóa email nào -> Cho phép bấm mọi việc có cffinish rỗng
+                    if (!lockedEmail) {
+                        if (!t.cffinish) {
+                            completeDisabled = false;
+                            completeTitle = "Xác nhận & Định danh máy";
+                        } else {
+                            completeTitle = "Việc này thuộc máy ID khác";
+                        }
+                    } 
+                    // Nếu máy này ĐÃ KHÓA với 1 email -> Chỉ cho phép bấm việc của email đó
+                    else {
+                        if (t.email === lockedEmail) {
+                            completeDisabled = false;
+                            completeTitle = "Hoàn thành";
+                        } else {
+                            completeTitle = "Máy này đã định danh cho Email khác";
+                        }
                     }
                 } else if (isStatusOverdue) {
                     completeTitle = "Quá hạn (Không thể báo cáo)";
@@ -286,7 +292,7 @@
                 }
             }
 
-            // LOGIC NÚT XÓA (DELETE)
+            // LOGIC NÚT XÓA (DELETE) - Giữ nguyên A.36
             let deleteDisabled = true;
             let deleteTitle = "Không có quyền";
             if (deviceIndex < 3) { 
@@ -325,21 +331,16 @@
         });
     }
 
-    async function sendManualMail(id) {
-        const t = allTasks.find(x => x.id === id);
-        if(confirm("Gửi thư nhắc việc?")) { if(await sendEmailCore(t)) { t.alertSent = true; await silentSave(); renderTable(); alert("Đã gửi!"); } }
-    }
-
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
         if(!task) return;
         
-        if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
+        if(confirm("Xác nhận hoàn thành công việc và ĐỊNH DANH thiết bị này cho Email: " + task.email + "?")) { 
             const userEmail = task.email;
             
-            // LOGIC QUAN TRỌNG A.37: Ánh xạ ID cho tất cả record cùng Email
+            // QUÉT LẠI TOÀN BỘ DỮ LIỆU: Gán cffinish cho mọi record cùng Email
             allTasks.forEach(t => {
-                if (t.email === userEmail && !t.cffinish) {
+                if (t.email === userEmail) {
                     t.cffinish = currentID;
                 }
             });
@@ -356,7 +357,7 @@
         if (deviceIndex === 2) {
             if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h!");
         }
-        if(confirm("Xác nhận xóa bản ghi này?")) { 
+        if(confirm("Xác nhận xóa?")) { 
             allTasks = allTasks.filter(x => x.id !== id); 
             saveData(); 
         }
