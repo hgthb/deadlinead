@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.36</title>
+    <title>Deadline manage - Version A.37</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,7 +15,6 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
-        /* Form và nút thêm chỉ dành cho ID1, ID2, ID3 */
         body.is-readonly #adminForm, 
         body.is-readonly .btn-add { 
             pointer-events: none !important; 
@@ -23,14 +22,8 @@
             cursor: not-allowed !important;
         }
 
-        /* Cấu hình chung cho nút nhỏ */
-        .btn-sm { 
-            pointer-events: auto; 
-            opacity: 1; 
-            cursor: pointer; 
-        }
+        .btn-sm { pointer-events: auto; opacity: 1; cursor: pointer; }
 
-        /* Hiệu ứng làm mờ khi nút bị vô hiệu hóa */
         .btn-sm:disabled {
             opacity: 0.2 !important;
             cursor: not-allowed !important;
@@ -90,7 +83,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.36</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.37</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -252,7 +245,8 @@
         allTasks.push({
             id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: document.getElementById('emailRecipient').value,
             start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value,
-            status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID
+            status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID,
+            cffinish: "" // BIẾN MỚI A.37
         });
         saveData();
         ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
@@ -272,19 +266,30 @@
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // LOGIC NÚT HOÀN THÀNH (TICK XANH)
+            // LOGIC NÚT HOÀN THÀNH (TICK XANH) - Cập nhật A.37
             let completeDisabled = true;
             let completeTitle = "Không có quyền";
+            
             if (deviceIndex >= 3) { // ID4 trở lên
-                if (isDoing) { completeDisabled = false; completeTitle = "Hoàn thành"; }
-                else if (isStatusOverdue) { completeTitle = "Quá hạn (Không thể báo cáo)"; }
-                else { completeTitle = "Đã hoàn thành"; }
+                if (isDoing) {
+                    // Nếu chưa được gán ID nào (cffinish rỗng) HOẶC ID đang dùng khớp với ID đã gán
+                    if (!t.cffinish || t.cffinish === currentID) {
+                        completeDisabled = false;
+                        completeTitle = "Hoàn thành";
+                    } else {
+                        completeTitle = "Việc này thuộc máy ID khác";
+                    }
+                } else if (isStatusOverdue) {
+                    completeTitle = "Quá hạn (Không thể báo cáo)";
+                } else {
+                    completeTitle = "Đã hoàn thành";
+                }
             }
 
             // LOGIC NÚT XÓA (DELETE)
             let deleteDisabled = true;
             let deleteTitle = "Không có quyền";
-            if (deviceIndex < 3) { // ID1, ID2, ID3
+            if (deviceIndex < 3) { 
                 if (isDoing) { deleteDisabled = false; deleteTitle = "Xóa"; }
                 else { deleteTitle = "Dữ liệu KPI (Không được xóa)"; }
             }
@@ -328,7 +333,17 @@
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
         if(!task) return;
+        
         if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
+            const userEmail = task.email;
+            
+            // LOGIC QUAN TRỌNG A.37: Ánh xạ ID cho tất cả record cùng Email
+            allTasks.forEach(t => {
+                if (t.email === userEmail && !t.cffinish) {
+                    t.cffinish = currentID;
+                }
+            });
+
             task.status = "Hoàn thành"; 
             saveData(); 
         } 
@@ -337,12 +352,10 @@
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
         if(!t) return;
-
         const deviceIndex = whitelist.indexOf(currentID);
-        if (deviceIndex === 2) { // Ràng buộc riêng cho ID3
-            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h từ lúc tạo!");
+        if (deviceIndex === 2) {
+            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h!");
         }
-        
         if(confirm("Xác nhận xóa bản ghi này?")) { 
             allTasks = allTasks.filter(x => x.id !== id); 
             saveData(); 
