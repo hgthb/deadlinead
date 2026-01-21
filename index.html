@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.33</title>
+    <title>Deadline manage - Version A.34</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -29,6 +29,13 @@
             filter: none !important; 
             opacity: 1 !important; 
             cursor: pointer !important; 
+        }
+
+        /* Làm mờ nút khi bị disabled (trường hợp quá hạn hoặc đã xong) */
+        .btn-complete:disabled {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+            filter: grayscale(0.5);
         }
 
         body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
@@ -83,7 +90,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.33</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.34</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -261,9 +268,10 @@
             const mailTooltip = t.alertSent ? "Đã gửi thư nhắc nhở" : "Gửi thư nhắc việc quá hạn";
             const mailBg = t.alertSent ? "#94a3b8" : "var(--warning)";
 
-            // ĐIỀU CHỈNH NÚT TICK XANH THEO TRẠNG THÁI
-            const completeBtnColor = (t.status === 'Quá hạn') ? 'var(--danger)' : 'var(--success)';
-            const completeBtnTitle = (t.status === 'Quá hạn') ? 'Quá hạn' : 'Hoàn thành';
+            // ĐIỀU CHỈNH LOGIC KHÓA NÚT KHI QUÁ HẠN
+            const isLockedOverdue = (t.status === 'Quá hạn');
+            const completeBtnColor = isLockedOverdue ? 'var(--danger)' : 'var(--success)';
+            const completeBtnTitle = isLockedOverdue ? 'Quá hạn (Không thể xác nhận)' : 'Hoàn thành';
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -276,7 +284,13 @@
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
-                        <button class="btn-sm btn-complete" style="background:${completeBtnColor}" onclick="confirmComplete('${t.id}')" ${isDone ? 'disabled' : ''} title="${completeBtnTitle}"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-sm btn-complete" 
+                                style="background:${completeBtnColor}" 
+                                onclick="confirmComplete('${t.id}')" 
+                                ${isDone || isLockedOverdue ? 'disabled' : ''} 
+                                title="${completeBtnTitle}">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
                         ${isOverdue ? `<button class="btn-sm btn-mail" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
                         <button class="btn-sm btn-del" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
@@ -291,7 +305,7 @@
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
-        if(!task) return;
+        if(!task || task.status === "Quá hạn") return; // Bảo mật thêm ở lớp xử lý
         if(confirm("Xác nhận đã hoàn thành công việc: " + task.name + "?")) { 
             task.status = "Hoàn thành"; 
             saveData(); 
