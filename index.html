@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.26</title>
+    <title>Deadline manage - Version A.27</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -70,7 +70,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.26</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.27</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -189,19 +189,16 @@
     }
 
     async function silentSecurityCheck() {
-        // Kiểm tra xem ID máy hiện tại đã có trong danh sách trắng chưa
         if (whitelist.includes(currentID)) { 
             document.body.classList.remove('is-readonly'); 
             document.getElementById('deviceStatus').innerText = "(ID " + (whitelist.indexOf(currentID) + 1) + ")";
         }
-        // Nếu chưa có và danh sách chưa đủ 3 người (Chủ + 2 nhân viên)
         else if (whitelist.length < 3) { 
             whitelist.push(currentID); 
             await silentSave(); 
             document.body.classList.remove('is-readonly'); 
             document.getElementById('deviceStatus').innerText = "(ID " + whitelist.length + ")";
         }
-        // Nếu đã đủ 3 người và không phải máy cũ
         else { 
             document.getElementById('deviceStatus').innerText = "(Chế độ xem)"; 
             document.body.classList.add('is-readonly'); 
@@ -285,9 +282,19 @@
     }
 
     function confirmComplete(id) { if(confirm("Hoàn thành?")) { allTasks.find(x => x.id === id).status = "Hoàn thành"; saveData(); } }
+
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
-        if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("Quá 24h!");
+        const deviceIndex = whitelist.indexOf(currentID);
+        
+        // Logic mới: ID1 (index 0) và ID2 (index 1) xóa không giới hạn thời gian
+        // ID3 (index 2) vẫn bị giới hạn 24h
+        if (deviceIndex === 2) {
+            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) {
+                return alert("ID3 chỉ được xóa trong vòng 24h!");
+            }
+        }
+        
         if(confirm("Xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
     }
     window.onload = fetchData;
