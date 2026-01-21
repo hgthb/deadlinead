@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.27</title>
+    <title>Deadline manage - Version A.28</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,7 +15,10 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
-        body.is-readonly #adminForm, body.is-readonly .col-8 button, body.is-readonly .btn-sm { 
+        /* Logic khóa cho ID4 trở đi */
+        body.is-readonly #adminForm, 
+        body.is-readonly .btn-sm:not(.btn-complete), 
+        body.is-readonly .btn-add { 
             pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; cursor: not-allowed !important;
         }
         body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
@@ -70,7 +73,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.27</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.28</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
@@ -189,19 +192,25 @@
     }
 
     async function silentSecurityCheck() {
-        if (whitelist.includes(currentID)) { 
-            document.body.classList.remove('is-readonly'); 
-            document.getElementById('deviceStatus').innerText = "(ID " + (whitelist.indexOf(currentID) + 1) + ")";
+        const idx = whitelist.indexOf(currentID);
+        if (idx !== -1) {
+            // Nếu là ID1, ID2, ID3: Mở toàn quyền
+            if (idx < 3) document.body.classList.remove('is-readonly');
+            // Nếu là ID4 trở đi: Bật chế độ readonly (nhưng tick xanh vẫn click được qua CSS class)
+            else document.body.classList.add('is-readonly');
+            
+            document.getElementById('deviceStatus').innerText = "(ID " + (idx + 1) + ")";
         }
-        else if (whitelist.length < 3) { 
-            whitelist.push(currentID); 
-            await silentSave(); 
-            document.body.classList.remove('is-readonly'); 
-            document.getElementById('deviceStatus').innerText = "(ID " + whitelist.length + ")";
-        }
-        else { 
-            document.getElementById('deviceStatus').innerText = "(Chế độ xem)"; 
-            document.body.classList.add('is-readonly'); 
+        else {
+            // Tự động thêm vào whitelist không giới hạn số lượng
+            whitelist.push(currentID);
+            await silentSave();
+            const newIdx = whitelist.length - 1;
+            
+            if (newIdx < 3) document.body.classList.remove('is-readonly');
+            else document.body.classList.add('is-readonly');
+            
+            document.getElementById('deviceStatus').innerText = "(ID " + (newIdx + 1) + ")";
         }
     }
 
@@ -268,9 +277,9 @@
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
-                        <button class="btn-sm" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''} title="Hoàn thành"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-sm btn-complete" style="background:#2ecc71" onclick="confirmComplete('${t.id}')" ${isDone || t.status === 'Quá hạn' ? 'disabled' : ''} title="Hoàn thành"><i class="fa-solid fa-check"></i></button>
                         ${isOverdue ? `<button class="btn-sm" style="background:${mailBg}; color:black" onclick="sendManualMail('${t.id}')" title="${mailTooltip}"><i class="fa-solid fa-envelope"></i></button>` : ''}
-                        <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                        <button class="btn-sm" style="background:#ef476f" onclick="deleteTask('${t.id}')" title="Xóa"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
                 </tr>`;
         });
@@ -286,15 +295,9 @@
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
         const deviceIndex = whitelist.indexOf(currentID);
-        
-        // Logic mới: ID1 (index 0) và ID2 (index 1) xóa không giới hạn thời gian
-        // ID3 (index 2) vẫn bị giới hạn 24h
         if (deviceIndex === 2) {
-            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) {
-                return alert("ID3 chỉ được xóa trong vòng 24h!");
-            }
+            if ((new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong vòng 24h!");
         }
-        
         if(confirm("Xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
     }
     window.onload = fetchData;
