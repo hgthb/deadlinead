@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.40</title>
+    <title>Deadline manage - Version A.41</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
@@ -15,12 +15,23 @@
             background: #fff; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px;
         }
 
-        body.is-readonly #adminForm, body.is-readonly .btn-add { 
-            pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; cursor: not-allowed !important;
+        body.is-readonly #adminForm, 
+        body.is-readonly .btn-add { 
+            pointer-events: none !important; 
+            filter: grayscale(1) opacity(0.3) !important; 
+            cursor: not-allowed !important;
         }
 
         .btn-sm { pointer-events: auto; opacity: 1; cursor: pointer; }
-        .btn-sm:disabled { opacity: 0.2 !important; cursor: not-allowed !important; filter: grayscale(1) !important; pointer-events: none !important; }
+
+        .btn-sm:disabled {
+            opacity: 0.2 !important;
+            cursor: not-allowed !important;
+            filter: grayscale(1) !important;
+            pointer-events: none !important;
+        }
+
+        body.is-readonly input { pointer-events: none !important; background-color: #f1f5f9 !important; }
 
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
@@ -38,32 +49,31 @@
         #taskRef { margin-left: -20px; }
 
         input { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
-        .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 3px rgba(67, 97, 238, 0.3); }
+
+        .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
         
         .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border-bottom: 1px solid #f8fafc; font-size: 12px; height: 42px; padding: 0 10px; white-space: nowrap; }
-        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; text-align: left; z-index: 10; font-size: 11px; }
+        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; text-align: left; z-index: 10; text-transform: uppercase; font-size: 11px; }
 
         .col-stt { width: 45px; text-align: center; }
-        .col-1 { width: 28%; } 
-        .col-2 { width: 9%; } 
-        .col-3 { width: 9%; } 
-        .col-4 { width: 5%; text-align: center; }
-        .col-5 { width: 14%; } 
-        .col-6 { width: 8%; } 
-        .col-7 { width: 9%; } /* Giảm nhẹ chiều rộng */
-        .col-8 { width: 12%; text-align: right; } /* Căn chỉnh lại cột thao tác */
+        .col-1 { width: 28%; } .col-2 { width: 9%; } .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; }
+        .col-5 { width: 14%; } .col-6 { width: 8%; } 
+        .col-7 { width: 10%; } /* Trạng thái */
+        .col-8 { width: 14%; text-align: right; } /* Thao tác */
 
         .col-2, .col-3, .col-4, .col-5 { transform: translateX(45px); }
 
         .overdue-row { background-color: #fff1f2 !important; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 70px; text-align: center; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 75px; text-align: center; }
         .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
         
-        .btn-raise { color: #64748b; background: transparent; font-size: 16px; margin-right: 5px; }
-        .btn-raise.active { color: var(--warning); cursor: pointer; }
-        .btn-raise.has-comment { color: var(--primary); }
+        /* Style cho Raise Hand Icon */
+        .hand-icon { font-size: 14px; margin-left: 5px; color: #cbd5e1; cursor: default; }
+        .hand-icon.active { color: var(--warning); cursor: pointer; }
+        .hand-icon.has-comment { color: var(--primary); }
 
         .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
@@ -72,13 +82,18 @@
 <body>
 
 <div id="browserGuard">
-    <h2>Trình duyệt không hỗ trợ (Cần Chrome/Safari)</h2>
+    <div>
+        <i class="fa-brands fa-chrome" style="font-size: 60px; color: #4285F4; margin: 10px;"></i>
+        <i class="fa-brands fa-safari" style="font-size: 60px; color: #00AEEF; margin: 10px;"></i>
+    </div>
+    <h2>Trình duyệt không được hỗ trợ</h2>
+    <p>Vui lòng sử dụng <b>Google Chrome</b> hoặc <b>Safari</b> để tiếp tục.</p>
 </div>
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.40</b> <span id="syncStatus"></span> <span id="deviceStatus"></span></div>
-        <button onclick="alert('Admin Panel')">Admin Control</button>
+        <div class="brand">📋 <b>PROJECT A.41</b> <span id="syncStatus" style="font-size: 11px; margin-left:10px; color: var(--primary);"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
     </div>
 
     <div id="adminForm">
@@ -119,18 +134,19 @@
 
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
+
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return "";
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
     const currentID = (() => {
         let id = localStorage.getItem('my_unique_device_id');
         if (!id) { id = "ID-" + Date.now() + "-" + Math.floor(Math.random() * 1000); localStorage.setItem('my_unique_device_id', id); }
         return id;
     })();
-
-    // Chuyển YYYY-MM-DD sang DD/MM/YYYY
-    function formatDateVN(dateStr) {
-        if(!dateStr) return "";
-        const [y, m, d] = dateStr.split('-');
-        return `${d}/${m}/${y}`;
-    }
 
     async function fetchData() {
         try {
@@ -138,8 +154,9 @@
             const data = await res.json();
             allTasks = data.tasks || []; whitelist = data.whitelist || [];
             await silentSecurityCheck();
+            await processAutoChecks();
             renderTable();
-        } catch (e) { console.error("Lỗi nạp dữ liệu"); }
+        } catch (e) { console.error("Lỗi dữ liệu"); }
     }
 
     async function silentSecurityCheck() {
@@ -149,8 +166,26 @@
         document.getElementById('deviceStatus').innerText = `(ID ${idx + 1})`;
     }
 
+    async function processAutoChecks() {
+        const now = new Date(); now.setHours(0,0,0,0);
+        let changed = false;
+        allTasks.forEach(t => {
+            const d = new Date(t.end); d.setHours(0,0,0,0);
+            if (d < now && t.status === "Đang làm") { t.status = "Quá hạn"; changed = true; }
+        });
+        if (changed) await silentSave();
+    }
+
     async function silentSave() {
         await fetch(URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY }, body: JSON.stringify({ tasks: allTasks, whitelist: whitelist }) });
+    }
+
+    async function saveData() {
+        document.getElementById('syncStatus').innerText = "Đang đồng bộ...";
+        await silentSave();
+        document.getElementById('syncStatus').innerText = "Đã lưu";
+        setTimeout(() => document.getElementById('syncStatus').innerText = "", 2000);
+        renderTable();
     }
 
     function addTask() {
@@ -159,16 +194,11 @@
         allTasks.push({
             id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: document.getElementById('emailRecipient').value,
             start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value,
-            status: "Đang làm", createdAt: new Date().toISOString(), inputID: currentID, cffinish: "", comment: ""
+            status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID,
+            cffinish: "", comment: ""
         });
         saveData();
-    }
-
-    async function saveData() {
-        document.getElementById('syncStatus').innerText = "Đồng bộ...";
-        await silentSave();
-        document.getElementById('syncStatus').innerText = "";
-        renderTable();
+        ['taskName','taskDept','taskRef','emailRecipient'].forEach(id => document.getElementById(id).value = '');
     }
 
     function renderTable() {
@@ -179,65 +209,77 @@
 
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
-            if(isOverdue && t.status === "Đang làm") t.status = "Quá hạn";
-            
-            const isDone = t.status === 'Hoàn thành', isStatusOverdue = (t.status === 'Quá hạn');
+            const isDone = t.status === 'Hoàn thành', isStatusOverdue = (t.status === 'Quá hạn'), isDoing = (t.status === 'Đang làm');
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
-
-            // Logic Raise Hand (Giải trình)
-            const canRaise = deviceIndex >= 3 && isStatusOverdue;
-            const raiseHandTitle = t.comment ? `Lý do: ${t.comment}` : "Bấm để giải trình quá hạn";
-
-            // Logic nút bấm (A.39)
+            
+            // Logic Nút Hoàn Thành (Kế thừa A.39)
             let compDisable = true;
-            if (deviceIndex >= 3 && t.status === "Đang làm") {
+            if (deviceIndex >= 3 && isDoing) {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
+            // Logic Raise Hand
+            const canRaise = deviceIndex >= 3 && isStatusOverdue;
+            const handTitle = t.comment ? `Giải trình: ${t.comment}` : (canRaise ? "Bấm để giải trình quá hạn" : "Chưa có giải trình");
+
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
-                    <td class="col-stt">${allTasks.length - index}</td>
+                    <td class="col-stt">${t.stt || (allTasks.length - index)}</td>
                     <td class="col-1"><b>${t.name}</b><br><small>${t.dept}   - ${t.email}</small></td>
-                    <td class="col-2">${formatDateVN(t.start)}</td>
-                    <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${formatDateVN(t.end)}</td>
+                    <td class="col-2">${formatDateDisplay(t.start)}</td>
+                    <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${formatDateDisplay(t.end)}</td>
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7">
                         <span class="badge" style="background:${statusColor}">${t.status}</span>
-                        <i class="fa-solid fa-hand-paper btn-raise ${canRaise?'active':''} ${t.comment?'has-comment':''}" 
-                           title="${raiseHandTitle}" 
-                           onclick="${canRaise ? `raiseHand('${t.id}')` : ''}"></i>
+                        <i class="fa-solid fa-hand-paper hand-icon ${canRaise?'active':''} ${t.comment?'has-comment':''}" 
+                           title="${handTitle}" onclick="${canRaise ? `raiseHand('${t.id}')` : ''}"></i>
                     </td>
                     <td class="col-8">
-                        <button class="btn-sm" style="background:${isStatusOverdue?'var(--danger)':'var(--success)'}" 
-                                onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''}><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-sm" style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
+                                onclick="confirmComplete('${t.id}')" ${compDisable ? 'disabled' : ''} title="Hoàn thành">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                        ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent?'#94a3b8':'var(--warning)'}; color:black" onclick="sendManualMail('${t.id}')" title="Gửi mail nhắc nhở"><i class="fa-solid fa-envelope"></i></button>` : ''}
                         <button class="btn-sm" style="background:#ef476f" 
-                                onclick="deleteTask('${t.id}')" ${deviceIndex >= 3 || !isDoing ? 'disabled' : ''}><i class="fa-solid fa-trash-can"></i></button>
+                                onclick="deleteTask('${t.id}')" ${deviceIndex >= 3 || !isDoing ? 'disabled' : ''} title="Xóa">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </td>
                 </tr>`;
         });
     }
 
+    async function sendManualMail(id) {
+        const t = allTasks.find(x => x.id === id);
+        if(confirm("Gửi thư nhắc việc?")) {
+            try {
+                const res = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: t.end, ref: t.ref, dept: t.dept, to_email: t.email });
+                if(res.status === 200) { t.alertSent = true; await silentSave(); renderTable(); alert("Đã gửi!"); }
+            } catch (e) { alert("Lỗi gửi mail"); }
+        }
+    }
+
     function raiseHand(id) {
         const t = allTasks.find(x => x.id === id);
-        const reason = prompt("Nhập lý do giải trình quá hạn:", t.comment || "");
-        if (reason !== null) {
-            t.comment = reason;
-            saveData();
-        }
+        const reason = prompt("Nhập lý do giải trình cho việc quá hạn:", t.comment || "");
+        if (reason !== null) { t.comment = reason; saveData(); }
     }
 
     function confirmComplete(id) { 
         const task = allTasks.find(x => x.id === id);
-        if(confirm(`Xác nhận hoàn thành & định danh cho ${task.email}?`)) { 
-            allTasks.forEach(t => { if(t.email === task.email) t.cffinish = currentID; });
+        if(confirm(`Xác nhận hoàn thành & định danh máy cho ${task.email}?`)) { 
+            allTasks.forEach(t => { if (t.email === task.email) t.cffinish = currentID; });
             task.status = "Hoàn thành"; saveData(); 
         } 
     }
 
     function deleteTask(id) {
+        const t = allTasks.find(x => x.id === id);
+        const deviceIndex = whitelist.indexOf(currentID);
+        if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ được xóa trong 24h!");
         if(confirm("Xác nhận xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
     }
 
