@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.55</title>
+    <title>Deadline Manage - Version A.56</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -71,12 +71,16 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 75px; text-align: center; }
         .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
         
-        /* Icon Raise Hand: Mặc định hiển thị, màu xám nhạt */
-        .hand-icon { font-size: 16px; margin-left: 8px; color: #cbd5e1; cursor: default; } 
-        /* Khi active (click được) */
-        .hand-icon.active { color: var(--warning); cursor: pointer; }
-        /* Khi đã có comment */
-        .hand-icon.has-comment { color: var(--primary); }
+        /* --- CSS MỚI CHO ICON RAISE HAND (A.56) --- */
+        /* Không dùng display:none, mà render trực tiếp bằng JS */
+        .hand-icon-base { font-size: 16px; margin-left: 8px; }
+        
+        /* Style cho ID3- (Admin): Màu xám */
+        .hand-admin { color: #95a5a6; cursor: help; }
+        
+        /* Style cho ID4+ (Staff): Màu vàng cam, click được */
+        .hand-staff { color: #f39c12; cursor: pointer; }
+        .hand-staff:hover { transform: scale(1.2); }
 
         .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
@@ -87,7 +91,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.55</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.56</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report-main" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -163,7 +167,7 @@
                         <th style="width:90px">Hạn chót</th>
                         <th style="width:100px">Tham chiếu</th>
                         <th style="width:100px">Trạng thái</th>
-                        <th style="width:200px">Giải trình (Raise Hand)</th>
+                        <th style="width:200px">Giải trình</th>
                     </tr>
                 </thead>
                 <tbody id="reportBody"></tbody>
@@ -298,14 +302,23 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- LOGIC HIỂN THỊ ICON RAISE HAND (SỬA LỖI A.55) ---
-            // Hiện icon nếu: Quá hạn HOẶC Đã có comment
+            // --- LÀM LẠI LOGIC HIỂN THỊ ICON RAISE HAND (A.56) ---
+            // 1. Điều kiện hiển thị: Quá hạn HOẶC Có nội dung comment
             const showHand = isStatusOverdue || (t.comment && t.comment.trim() !== "");
-            // Click được nếu: Là ID4+ VÀ Quá hạn
-            const canRaise = deviceIndex >= 3 && isStatusOverdue;
             
-            const handTitle = t.comment ? `Giải trình: ${t.comment}` : "Bấm để giải trình quá hạn";
-            const handClass = `fa-solid fa-hand-paper hand-icon ${canRaise ? 'active' : ''} ${t.comment ? 'has-comment' : ''}`;
+            // 2. Tạo HTML cho icon nếu thỏa điều kiện
+            let handHtml = "";
+            if (showHand) {
+                if (deviceIndex <= 2) {
+                    // ID <= 3 (Admin): Màu xám, tooltip hiện nội dung, KHÔNG click
+                    const tip = t.comment ? `Nội dung giải trình: ${t.comment}` : "Chưa có giải trình";
+                    handHtml = `<i class="fa-solid fa-hand-paper hand-icon-base hand-admin" title="${tip}"></i>`;
+                } else {
+                    // ID >= 4 (Staff): Màu vàng, click để nhập
+                    const tip = t.comment ? `Đã giải trình: ${t.comment}` : "Bấm để nhập giải trình";
+                    handHtml = `<i class="fa-solid fa-hand-paper hand-icon-base hand-staff" title="${tip}" onclick="raiseHand('${t.id}')"></i>`;
+                }
+            }
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -318,7 +331,7 @@
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
                     <td class="col-7">
                         <span class="badge" style="background:${statusColor}">${t.status}</span>
-                        ${showHand ? `<i class="${handClass}" title="${handTitle}" onclick="${canRaise ? `raiseHand('${t.id}')` : ''}"></i>` : ''}
+                        ${handHtml}
                     </td>
                     <td class="col-8">
                         <button class="btn-sm" style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
@@ -339,7 +352,7 @@
         });
     }
 
-    // --- REPORT FUNCTIONS (Có cột Giải trình) ---
+    // --- REPORT FUNCTIONS ---
     function openReportModal() {
         document.getElementById('reportModal').style.display = "block";
         document.getElementById('repStartDate').value = "";
@@ -388,7 +401,8 @@
                 <td>${formatDateDisplay(t.end)}</td>
                 <td>${t.ref || ''}</td>
                 <td>${t.status}</td>
-                <td>${t.comment || ''}</td> </tr>`;
+                <td>${t.comment || ''}</td>
+            </tr>`;
         });
         document.getElementById('btnExportPDF').style.display = "inline-block";
     }
@@ -409,7 +423,7 @@
             columnStyles: {
                 0: { cellWidth: 10 },
                 1: { cellWidth: 50 },
-                7: { cellWidth: 50 } // Độ rộng cột Giải trình
+                7: { cellWidth: 50 } 
             }
         });
         doc.save('Bao_cao_Deadline.pdf');
@@ -418,8 +432,8 @@
     window.onclick = (e) => { if(e.target == document.getElementById('reportModal')) closeReportModal(); }
 
     function confirmComplete(id) { 
+        const t = allTasks.find(x => x.id === id);
         if(confirm("Bạn xác nhận đã hoàn thành ?")) { 
-            const t = allTasks.find(x => x.id === id);
             allTasks.forEach(item => { if(item.email === t.email) item.cffinish = currentID; });
             t.status = "Hoàn thành"; saveData(); 
         } 
