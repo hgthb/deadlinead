@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.66</title>
+    <title>Deadline Manage - Version A.67</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
@@ -31,11 +31,10 @@
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         
-        /* --- LAYOUT NHẬP LIỆU A.66 --- */
+        /* --- LAYOUT NHẬP LIỆU A.65 (Giữ nguyên) --- */
         #adminForm { 
             display: grid; 
-            /* Cập nhật: Ngày tháng set cứng 100px */
-            grid-template-columns: 2.3fr 1.2fr 100px 100px 32px 1.4fr 1.6fr 80px; 
+            grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; 
             gap: 4px; 
             background: #fff; 
             padding: 8px; 
@@ -75,15 +74,15 @@
         th, td { border-bottom: 1px solid #f8fafc; font-size: 12px; height: 42px; padding: 0 10px; white-space: nowrap; }
         th { background: #f8fafc; color: #64748b; position: sticky; top: 0; text-align: left; z-index: 10; text-transform: uppercase; font-size: 11px; }
 
-        /* --- CẤU HÌNH CỘT A.66 --- */
+        /* --- CẤU HÌNH CỘT A.67 --- */
         .col-stt { width: 45px; text-align: center; }
-        .col-1 { width: 30%; } /* Tăng nhẹ để bù cho cột Status giảm */
+        .col-1 { width: 28%; } /* Giữ nguyên A.65 */
         .col-2 { width: 9%; } 
         .col-3 { width: 9%; } 
         .col-4 { width: 5%; text-align: center; }
         .col-5 { width: 14%; } 
         .col-6 { width: 8%; } 
-        .col-7 { width: 8%; } /* Giảm độ rộng cột Trạng thái (~2 ký tự) */
+        .col-7 { width: 8%; } /* Giảm từ 10% xuống 8% */
         .col-8 { width: 14%; text-align: right; }
 
         .col-2, .col-3, .col-4, .col-5 { transform: translateX(45px); }
@@ -104,7 +103,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.66</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.67</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -308,9 +307,9 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- LOGIC MÀU SẮC RAISE HAND (A.66) ---
+            // --- LOGIC MÀU SẮC RAISE HAND (A.66 - Giữ nguyên A.65) ---
             const hasComment = t.comment && t.comment.trim() !== "";
-            const handColor = hasComment ? '#2ecc71' : '#f1c40f'; // Xanh lá nếu có comment, Vàng nếu rỗng
+            const handColor = hasComment ? '#2ecc71' : '#f1c40f'; 
             
             let handCursor = 'help';
             let handClick = '';
