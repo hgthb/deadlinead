@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.57</title>
+    <title>Deadline Manage - Version A.58</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -75,7 +75,6 @@
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
         .mail-disabled { opacity: 0.2 !important; pointer-events: none !important; filter: grayscale(1); }
         
-        /* Hiệu ứng hover cho icon raise hand */
         .fa-hand:hover { transform: scale(1.2); transition: 0.2s; }
     </style>
 </head>
@@ -83,7 +82,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.57</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.58</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report-main" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -201,7 +200,7 @@
             if (idx !== -1 && idx <= 2) { setupInputFlow(); document.getElementById('taskName').focus(); }
             await processAutoChecks();
             renderTable();
-        } catch (e) { console.error("Lỗi dữ liệu:", e); }
+        } catch (e) { console.error("Lỗi tải dữ liệu:", e); }
     }
 
     function setupInputFlow() {
@@ -284,49 +283,35 @@
         const canSendMail = (deviceIndex !== -1 && deviceIndex <= 2);
 
         [...allTasks].reverse().forEach((t, index) => {
-            // TÍNH TOÁN THỜI GIAN THỰC TẾ
-            const isOverdueReal = new Date(t.end) < now && t.status !== "Hoàn thành";
-            
-            // LOGIC TRẠNG THÁI HIỂN THỊ
+            const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
-            const isStatusOverdue = (t.status === 'Quá hạn'); 
-            const isDoing = (t.status === 'Đang làm');
-            let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
+            let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
             
             let compDisable = true;
-            if (deviceIndex >= 3 && isDoing) {
+            if (deviceIndex >= 3 && t.status === "Đang làm") {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- LOGIC RAISE HAND MỚI (A.57) ---
-            // Hiện nếu: Tính toán thấy quá hạn HOẶC đã có comment
-            const showHand = isOverdueReal || (t.comment && t.comment.trim() !== "");
-            
+            // --- LOGIC RAISE HAND MỚI (A.58) ---
+            // Luôn hiển thị icon trên mọi dòng
             let handHtml = "";
-            if (showHand) {
-                // Xác định quyền ID
-                const isStaff = deviceIndex >= 3;
-                
-                // Cấu hình Icon
-                const color = isStaff ? '#f39c12' : '#95a5a6'; // Vàng cho Staff, Xám cho Admin
-                const cursor = isStaff ? 'pointer' : 'help';
-                
-                // Tooltip
-                const tip = t.comment ? `Nội dung: ${t.comment}` : (isStaff ? "Bấm để giải trình" : "Chưa có giải trình");
-                
-                // Action
-                const clickAction = isStaff ? `onclick="raiseHand('${t.id}')"` : "";
-                
-                handHtml = `<i class="fa-solid fa-hand" style="color:${color}; margin-left:8px; cursor:${cursor}" title="${tip}" ${clickAction}></i>`;
+            if (deviceIndex <= 2) {
+                // Admin (ID1-3): Xám, không click
+                const tip = t.comment ? `Giải trình: ${t.comment}` : "Chưa có giải trình";
+                handHtml = `<i class="fa-solid fa-hand" style="color:#95a5a6; margin-left:8px; cursor:help" title="${tip}"></i>`;
+            } else {
+                // Staff (ID4+): Vàng, click được
+                const tip = t.comment ? `Đã giải trình: ${t.comment}` : "Nhập giải trình";
+                handHtml = `<i class="fa-solid fa-hand" style="color:#f39c12; margin-left:8px; cursor:pointer" title="${tip}" onclick="raiseHand('${t.id}')"></i>`;
             }
 
             body.innerHTML += `
-                <tr class="${isOverdueReal ? 'overdue-row' : ''}">
+                <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt || (allTasks.length - index)}</td>
                     <td class="col-1"><b>${t.name}</b><br><small>${t.dept}   - ${t.email}</small></td>
                     <td class="col-2">${formatDateDisplay(t.start)}</td>
-                    <td class="col-3" style="color:${isOverdueReal?'var(--danger)':'inherit'}">${formatDateDisplay(t.end)}</td>
+                    <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${formatDateDisplay(t.end)}</td>
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
@@ -335,11 +320,11 @@
                         ${handHtml}
                     </td>
                     <td class="col-8">
-                        <button class="btn-sm" style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
+                        <button class="btn-sm" style="background:${t.status==='Quá hạn' ? 'var(--danger)' : 'var(--success)'}" 
                                 onclick="confirmComplete('${t.id}')" ${compDisable ? 'disabled' : ''} title="Hoàn thành">
                             <i class="fa-solid fa-check"></i>
                         </button>
-                        ${isOverdueReal ? `
+                        ${isOverdue ? `
                         <button class="btn-sm ${canSendMail ? '' : 'mail-disabled'}" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}; color:${t.alertSent ? 'white' : 'black'}" 
                                 onclick="sendManualMail('${t.id}')" title="${t.alertSent ? 'Đã gửi email' : 'Gửi email'}">
                             <i class="fa-solid fa-envelope"></i>
@@ -371,13 +356,15 @@
         const body = document.getElementById('reportBody');
         body.innerHTML = "";
 
+        if(start && end && start > end) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+
+        const sDate = start ? new Date(start) : null; 
+        if(sDate) sDate.setHours(0,0,0,0);
+        const eDate = end ? new Date(end) : null; 
+        if(eDate) eDate.setHours(23,59,59,999);
+
         let filtered = allTasks.filter(t => {
             const tDate = new Date(t.end); tDate.setHours(0,0,0,0);
-            const sDate = start ? new Date(start) : null; 
-            if(sDate) sDate.setHours(0,0,0,0);
-            const eDate = end ? new Date(end) : null; 
-            if(eDate) eDate.setHours(23,59,59,999);
-
             let dateMatch = true;
             if(sDate && tDate < sDate) dateMatch = false;
             if(eDate && tDate > eDate) dateMatch = false;
