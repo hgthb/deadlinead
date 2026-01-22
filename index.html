@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.58</title>
+    <title>Deadline Manage - Version A.59</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -82,7 +82,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.58</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.59</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report-main" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -285,7 +285,8 @@
         [...allTasks].reverse().forEach((t, index) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
-            let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
+            const isStatusOverdue = t.status === 'Quá hạn';
+            let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             
             let compDisable = true;
             if (deviceIndex >= 3 && t.status === "Đang làm") {
@@ -293,17 +294,16 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- LOGIC RAISE HAND MỚI (A.58) ---
-            // Luôn hiển thị icon trên mọi dòng
+            // --- LOGIC RAISE HAND MỚI (A.59) - LUÔN HIỂN THỊ ---
             let handHtml = "";
+            const tipContent = t.comment ? `Nội dung: ${t.comment}` : (deviceIndex <= 2 ? "Chưa có giải trình" : "Bấm để giải trình");
+            
             if (deviceIndex <= 2) {
-                // Admin (ID1-3): Xám, không click
-                const tip = t.comment ? `Giải trình: ${t.comment}` : "Chưa có giải trình";
-                handHtml = `<i class="fa-solid fa-hand" style="color:#95a5a6; margin-left:8px; cursor:help" title="${tip}"></i>`;
+                // Admin (ID1-3): Xám, con trỏ help, KHÔNG có onclick
+                handHtml = `<i class="fa-solid fa-hand" style="color:#bdc3c7; font-size:16px; margin-left:8px; cursor:help;" title="${tipContent}"></i>`;
             } else {
-                // Staff (ID4+): Vàng, click được
-                const tip = t.comment ? `Đã giải trình: ${t.comment}` : "Nhập giải trình";
-                handHtml = `<i class="fa-solid fa-hand" style="color:#f39c12; margin-left:8px; cursor:pointer" title="${tip}" onclick="raiseHand('${t.id}')"></i>`;
+                // Staff (ID4+): Vàng, con trỏ pointer, CÓ onclick
+                handHtml = `<i class="fa-solid fa-hand" style="color:#f1c40f; font-size:16px; margin-left:8px; cursor:pointer;" title="${tipContent}" onclick="raiseHand('${t.id}')"></i>`;
             }
 
             body.innerHTML += `
@@ -320,7 +320,7 @@
                         ${handHtml}
                     </td>
                     <td class="col-8">
-                        <button class="btn-sm" style="background:${t.status==='Quá hạn' ? 'var(--danger)' : 'var(--success)'}" 
+                        <button class="btn-sm" style="background:${isStatusOverdue ? 'var(--danger)' : 'var(--success)'}" 
                                 onclick="confirmComplete('${t.id}')" ${compDisable ? 'disabled' : ''} title="Hoàn thành">
                             <i class="fa-solid fa-check"></i>
                         </button>
