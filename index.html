@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline manage - Version A.61</title>
+    <title>Deadline manage - Version A.62</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
@@ -32,30 +32,36 @@
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         
-        /* --- KHÔI PHỤC LAYOUT TỪ BẢN A.50 --- */
+        /* --- LAYOUT NHẬP LIỆU MỚI (A.62) --- */
         #adminForm { 
-            display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.4fr 1.5fr 1.5fr 0.6fr; 
-            gap: 5px; background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 5px; 
+            display: grid; 
+            /* Phân bổ tỷ lệ: Tên(lớn) - BP(vừa) - Ngày(cố định) - Ngày(cố định) - Lần(nhỏ) - Ref(vừa) - Email(lớn) - Nút(cố định) */
+            grid-template-columns: 2fr 1.2fr 135px 135px 50px 1fr 1.2fr 70px; 
+            gap: 8px; 
+            background: #fff; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-bottom: 5px;
+            align-items: center;
         }
-        
-        #taskName { width: calc(100% + 80px); }
-        #taskDept { margin-left: 80px; }
-        #startDate { width: calc(100% - 96px); margin-left: 80px; }
-        #deadline { width: calc(100% - 15px); }
-        #iterCount { margin-left: -18px; }
-        #taskRef { margin-left: -20px; }
 
-        input, select { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; }
-        #adminForm input { width: 100%; }
-        /* ------------------------------------ */
+        /* Reset margin cũ để Grid hoạt động đúng */
+        #adminForm input { width: 100%; margin: 0; }
         
-        input[type="date"] { position: relative; }
+        input, select { height: 32px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        input:focus { border-color: var(--primary); }
+
+        /* Ô nhập Lần: Căn giữa */
+        #iterCount { text-align: center; padding: 0 2px; }
+
+        /* Date Picker CSS */
+        input[type="date"] { position: relative; cursor: pointer; }
         input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
         input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
         input[type="date"]::-webkit-datetime-edit-day-field { order: 1; }
         input[type="date"]::-webkit-datetime-edit-text { order: 1.5; }
 
-        .btn-add { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; }
+        .btn-add { height: 32px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.3s; width: 100%; }
         .btn-report { background: #64748b; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; margin-right: 5px; cursor: pointer; }
         
         .btn-run-report { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; padding: 0 15px; font-size: 12px; font-weight: bold; }
@@ -90,7 +96,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.61</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.62</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -100,9 +106,9 @@
     <div id="adminForm">
         <input type="text" id="taskName" placeholder="Tên việc...">
         <input type="text" id="taskDept" placeholder="Bộ phận/người xử lý..">
-        <input type="date" id="startDate">
-        <input type="date" id="deadline">
-        <input type="number" id="iterCount" value="1">
+        <input type="date" id="startDate" lang="vi-VN" required>
+        <input type="date" id="deadline" lang="vi-VN" required>
+        <input type="number" id="iterCount" value="1" placeholder="Lần" min="1" max="99">
         <input type="text" id="taskRef" placeholder="Tham chiếu...">
         <input type="text" id="emailRecipient" placeholder="Email nhận...">
         <button class="btn-add" id="btnAdd" onclick="addTask()">THÊM</button>
@@ -289,7 +295,7 @@
             let statusColor = isDone ? '#2ecc71' : (isStatusOverdue ? '#ef476f' : '#4361ee');
             
             let compDisable = true;
-            if (deviceIndex >= 3 && isDoing) {
+            if (deviceIndex >= 3 && t.status === "Đang làm") {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
@@ -402,8 +408,8 @@
     }
 
     function confirmComplete(id) { 
-        const task = allTasks.find(x => x.id === id);
         if(confirm("Bạn xác nhận đã hoàn thành ?")) { 
+            const t = allTasks.find(x => x.id === id);
             allTasks.forEach(t => { if (t.email === task.email) t.cffinish = currentID; });
             task.status = "Hoàn thành"; saveData(); 
         } 
