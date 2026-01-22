@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version Abv.10</title>
+    <title>Deadline Manage - Version Abv.11</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
@@ -26,8 +26,22 @@
         .modal-content button, .btn-report, .btn-sm { pointer-events: auto !important; opacity: 1 !important; filter: none !important; cursor: pointer !important; }
 
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; position: relative; }
         
+        /* Style About khắc chìm ánh bạc */
+        .about-btn { 
+            margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; 
+            text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8);
+            cursor: pointer; user-select: none; transition: 0.2s;
+        }
+        .about-btn:hover { color: #a0a0a0; }
+        
+        .about-dropdown { 
+            display: none; position: absolute; top: 40px; left: 160px; background: white; 
+            border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); line-height: 1.8; font-size: 12px; color: #334155;
+        }
+
         #adminForm { 
             display: grid; 
             grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; 
@@ -77,7 +91,17 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT Abv.10</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">
+            📋 <b>DEADLINE MANAGE Abv.11</b> 
+            <span class="about-btn" ondblclick="toggleAbout()">About</span>
+            <div id="aboutContent" class="about-dropdown">
+                Develop by Mr Hưng<br>
+                Tel : 0965594679<br>
+                Email : ndhung.pl@gmail.com
+            </div>
+            <span id="syncStatus"></span> 
+            <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span>
+        </div>
         <div>
             <button class="btn-report" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -100,7 +124,7 @@
             <thead>
                 <tr>
                     <th class="col-stt">STT</th>
-                    <th class="col-1">Việc / Bộ phận - Email</th>
+                    <th class="col-1">Việc/ Bộ phận/ Người xử lý-Email</th>
                     <th class="col-2">Bắt đầu</th>
                     <th class="col-3">Hạn chót</th>
                     <th class="col-4">Lần</th>
@@ -160,6 +184,18 @@
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
     const INPUT_FIELDS = ['taskName', 'taskDept', 'startDate', 'deadline', 'iterCount', 'taskRef', 'emailRecipient'];
+
+    function toggleAbout() {
+        const dropdown = document.getElementById('aboutContent');
+        dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Đóng About khi click ra ngoài
+    window.addEventListener('click', function(e) {
+        if (!e.target.matches('.about-btn')) {
+            document.getElementById('aboutContent').style.display = 'none';
+        }
+    });
 
     function formatDateDisplay(dateStr) {
         if (!dateStr) return "";
@@ -272,11 +308,10 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- LOGIC DISABLE NÚT XÓA (Abv.10) ---
             let delDisable = false;
-            if (deviceIndex >= 3) delDisable = true; // ID4+ bị chặn
-            if (t.status === "Hoàn thành" || t.status === "Quá hạn") delDisable = true; // Khóa theo trạng thái
-            if (deviceIndex === 2) { // ID3 kiểm tra 24h
+            if (deviceIndex >= 3) delDisable = true; 
+            if (t.status === "Hoàn thành" || t.status === "Quá hạn") delDisable = true; 
+            if (deviceIndex === 2) { 
                 const hours = (new Date() - new Date(t.createdAt)) / 3600000;
                 if (hours > 24) delDisable = true;
             }
@@ -294,7 +329,12 @@
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
-                    <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span> ${handHtml}</td>
+                    <td class="col-7">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <span class="badge" style="background:${statusColor}">${t.status}</span>
+                            ${handHtml}
+                        </div>
+                    </td>
                     <td class="col-8">
                         <button class="btn-sm" style="background:${statusColor}" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''} title="${t.status}">
                             <i class="fa-solid fa-check"></i>
@@ -309,10 +349,13 @@
     }
 
     async function confirmComplete(id) { 
-        if(!confirm("Bạn xác nhận đã hoàn thành?")) return;
         const idx = allTasks.findIndex(x => String(x.id) === String(id));
         if (idx === -1) return;
-        const targetEmail = allTasks[idx].email;
+        const targetTask = allTasks[idx];
+
+        if(!confirm(`Bạn xác nhận hoàn thành công việc có email ${targetTask.email} ?`)) return;
+
+        const targetEmail = targetTask.email;
         allTasks.forEach(item => { if (item.email === targetEmail) item.cffinish = currentID; });
         allTasks[idx].status = "Hoàn thành";
         await saveData();
@@ -324,21 +367,15 @@
         if (reason !== null) { t.comment = reason; saveData(); }
     }
 
-    // --- LOGIC XÓA TINH CHỈNH (Abv.10) ---
     async function deleteTask(id) {
         const t = allTasks.find(x => String(x.id) === String(id));
         if (!t) return;
-
-        // Lớp bảo vệ cuối cùng bằng code (đề phòng disabled bị hack)
         const myIdx = whitelist.indexOf(currentID);
         if (myIdx >= 3) return;
-        if (t.status === "Hoàn thành" || t.status === "Quá hạn") return alert("Không thể xóa công việc đã Hoàn thành hoặc Quá hạn!");
-        if (myIdx === 2) {
-            const hours = (new Date() - new Date(t.createdAt)) / 3600000;
-            if (hours > 24) return alert("ID3 chỉ có quyền xóa trong vòng 24 giờ kể từ khi tạo!");
-        }
+        if (t.status === "Hoàn thành" || t.status === "Quá hạn") return alert("Không thể xóa!");
+        if (myIdx === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("Hết hạn 24h xóa!");
 
-        if(confirm("Xác nhận xóa công việc này?")) {
+        if(confirm("Xác nhận xóa?")) {
             allTasks = allTasks.filter(x => String(x.id) !== String(id));
             await saveData();
         }
@@ -346,7 +383,7 @@
 
     async function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
-        if(confirm("Gửi email nhắc việc?")) {
+        if(confirm("Gửi email?")) {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: formatDateDisplay(t.end), ref: t.ref, dept: t.dept, to_email: t.email });
             t.alertSent = true; await silentSave(); renderTable();
         }
