@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version Abv.3</title>
+    <title>Deadline Manage - Version Abv.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
@@ -31,7 +31,7 @@
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         
-        /* --- LAYOUT NHẬP LIỆU A.65/Abv.2 --- */
+        /* --- LAYOUT NHẬP LIỆU A.65 --- */
         #adminForm { 
             display: grid; 
             grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; 
@@ -99,7 +99,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT Abv.3</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT Abv.4</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -419,11 +419,16 @@
         if (reason !== null) { t.comment = reason; saveData(); }
     }
 
+    // --- FIX LOGIC: Sửa biến tham chiếu sai trong confirmComplete ---
     function confirmComplete(id) { 
         if(confirm("Bạn xác nhận đã hoàn thành ?")) { 
-            const t = allTasks.find(x => x.id === id);
-            allTasks.forEach(t => { if (t.email === task.email) t.cffinish = currentID; });
-            task.status = "Hoàn thành"; saveData(); 
+            const currentTask = allTasks.find(x => x.id === id);
+            // Sửa lỗi: dùng biến currentTask thay vì 'task' không tồn tại
+            allTasks.forEach(item => { 
+                if (item.email === currentTask.email) item.cffinish = currentID; 
+            });
+            currentTask.status = "Hoàn thành"; 
+            saveData(); 
         } 
     }
 
