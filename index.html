@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version A.53</title>
+    <title>Deadline Manage - Version A.54</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,24 +13,18 @@
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
-        /* --- GIAO DIỆN MODAL REPORT ĐẸP (KHÔI PHỤC TỪ A.51) --- */
+        /* Modal Report */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
         .modal-content { 
             background-color: #fff; margin: 2% auto; padding: 25px; border: 1px solid #888; 
-            width: 95%; max-width: 1300px; border-radius: 12px; max-height: 90vh; 
+            width: 98%; max-width: 1400px; border-radius: 12px; max-height: 90vh; 
             display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
         .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; align-self: flex-end; margin-bottom: 10px; }
-        .close-modal:hover { color: #000; }
-        
-        .report-controls { 
-            display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; 
-            background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;
-        }
-        .report-controls label { font-weight: 600; font-size: 13px; color: #475569; }
+        .report-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .report-result-container { overflow-y: auto; flex-grow: 1; border: 1px solid #eee; border-radius: 4px; }
 
-        /* Lock Logic (Chỉ khóa form nhập liệu chính, KHÔNG khóa Modal Report) */
+        /* Lock Logic */
         body.is-readonly #adminForm, body.is-readonly .btn-add-task { 
             pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; cursor: not-allowed !important;
         }
@@ -41,23 +35,17 @@
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         
-        /* Layout nhập liệu chuẩn A.42/A.52 */
         #adminForm { 
-            display: grid; 
-            grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.4fr 1.5fr 1.5fr 0.6fr; 
+            display: grid; grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.4fr 1.5fr 1.5fr 0.6fr; 
             gap: 5px; background: #fff; padding: 8px; border-radius: 8px; margin-bottom: 5px; 
         }
         
-        #taskName { width: calc(100% + 80px); }
-        #taskDept { margin-left: 80px; }
-        #startDate { width: calc(100% - 96px); margin-left: 80px; }
-        #deadline { width: calc(100% - 15px); }
-        #iterCount { margin-left: -18px; }
-        #taskRef { margin-left: -20px; }
+        #taskName { width: calc(100% + 80px); } #taskDept { margin-left: 80px; } 
+        #startDate { width: calc(100% - 96px); margin-left: 80px; } #deadline { width: calc(100% - 15px); } 
+        #iterCount { margin-left: -18px; } #taskRef { margin-left: -20px; }
         
-        input, select { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; box-sizing: border-box; outline: none; width: 100%; }
+        input, select { height: 30px; padding: 0 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; width: 100%; box-sizing: border-box; outline: none; }
         
-        /* CSS ép định dạng ngày tháng hiển thị */
         input[type="date"] { position: relative; }
         input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
         input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
@@ -65,8 +53,6 @@
         input[type="date"]::-webkit-datetime-edit-text { order: 1.5; }
 
         .btn-add-task { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; }
-        
-        /* Nút Report chuyên biệt */
         .btn-report-main { background: #64748b; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; margin-right: 5px; cursor: pointer; }
         .btn-report-action { height: 30px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; padding: 0 15px; }
         .btn-pdf { height: 30px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 12px; padding: 0 15px; display: none; }
@@ -85,7 +71,6 @@
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; display: inline-block; min-width: 75px; text-align: center; }
         .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s; }
         
-        /* Fix hiển thị icon Raise Hand */
         .hand-icon { font-size: 14px; margin-left: 5px; color: #cbd5e1; display: none; } 
         .hand-icon.show { display: inline-block; } 
         .hand-icon.active { color: var(--warning); cursor: pointer; }
@@ -100,7 +85,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <div class="brand">📋 <b>PROJECT A.53</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
+        <div class="brand">📋 <b>PROJECT A.54</b> <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span></div>
         <div>
             <button class="btn-report-main" onclick="openReportModal()"><i class="fa-solid fa-chart-line"></i> Report</button>
             <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
@@ -169,13 +154,14 @@
             <table id="reportTable">
                 <thead>
                     <tr>
-                        <th style="width:50px">STT</th>
-                        <th style="width:250px">Tên công việc</th>
+                        <th style="width:40px">STT</th>
+                        <th style="width:200px">Tên công việc</th>
                         <th style="width:150px">Bộ phận/Email</th>
-                        <th style="width:100px">Bắt đầu</th>
-                        <th style="width:100px">Hạn chót</th>
-                        <th style="width:150px">Tham chiếu</th>
-                        <th style="width:120px">Trạng thái</th>
+                        <th style="width:90px">Bắt đầu</th>
+                        <th style="width:90px">Hạn chót</th>
+                        <th style="width:100px">Tham chiếu</th>
+                        <th style="width:100px">Trạng thái</th>
+                        <th style="width:200px">Giải trình (Raise Hand)</th>
                     </tr>
                 </thead>
                 <tbody id="reportBody"></tbody>
@@ -209,24 +195,12 @@
         try {
             const res = await fetch(URL, { headers: { 'X-Access-Key': READ_KEY, 'X-Bin-Meta': false } });
             const data = await res.json();
-            
-            // DATA SAFETY: Xử lý định dạng JSONBin
-            if (data.record) {
-                allTasks = data.record.tasks || [];
-                whitelist = data.record.whitelist || [];
-            } else {
-                allTasks = data.tasks || [];
-                whitelist = data.whitelist || [];
-            }
+            if (data.record) { allTasks = data.record.tasks || []; whitelist = data.record.whitelist || []; } 
+            else { allTasks = data.tasks || []; whitelist = data.whitelist || []; }
             
             await silentSecurityCheck();
-            
             const idx = whitelist.indexOf(currentID);
-            if (idx !== -1 && idx <= 2) {
-                setupInputFlow();
-                document.getElementById('taskName').focus();
-            }
-
+            if (idx !== -1 && idx <= 2) { setupInputFlow(); document.getElementById('taskName').focus(); }
             await processAutoChecks();
             renderTable();
         } catch (e) { console.error("Lỗi tải dữ liệu:", e); }
@@ -241,11 +215,8 @@
                 if (e.key === 'Enter') {
                     if (this.value.trim() !== '') {
                         e.preventDefault();
-                        if (index < INPUT_FIELDS.length - 1) {
-                            document.getElementById(INPUT_FIELDS[index + 1]).focus();
-                        } else {
-                            document.getElementById('btnAdd').click();
-                        }
+                        if (index < INPUT_FIELDS.length - 1) document.getElementById(INPUT_FIELDS[index + 1]).focus();
+                        else document.getElementById('btnAdd').click();
                     }
                 }
             });
@@ -325,8 +296,8 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // --- KHÔI PHỤC LOGIC RAISE HAND (ID4+ click được) ---
-            const isRaiseVisible = isStatusOverdue;
+            // Logic Raise Hand: Hiện nếu Quá hạn HOẶC Có comment
+            const isRaiseVisible = isStatusOverdue || (t.comment && t.comment.trim() !== "");
             const canRaise = deviceIndex >= 3 && isStatusOverdue;
             const handTitle = t.comment ? `Giải trình: ${t.comment}` : "Bấm để giải trình quá hạn";
 
@@ -351,7 +322,7 @@
                         </button>
                         ${isOverdue ? `
                         <button class="btn-sm ${canSendMail ? '' : 'mail-disabled'}" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}; color:${t.alertSent ? 'white' : 'black'}" 
-                                onclick="sendManualMail('${t.id}')" title="Gửi email nhắc việc">
+                                onclick="sendManualMail('${t.id}')" title="${t.alertSent ? 'Đã gửi email' : 'Gửi email'}">
                             <i class="fa-solid fa-envelope"></i>
                         </button>` : ''}
                         <button class="btn-sm" style="background:#ef476f" 
@@ -363,7 +334,7 @@
         });
     }
 
-    // --- REPORT & PDF FUNCTIONS (Chuẩn A.51) ---
+    // --- REPORT FUNCTIONS ---
     function openReportModal() {
         document.getElementById('reportModal').style.display = "block";
         document.getElementById('repStartDate').value = "";
@@ -398,7 +369,7 @@
         });
 
         if(filtered.length === 0) {
-            body.innerHTML = "<tr><td colspan='7' style='text-align:center;'>Không có dữ liệu phù hợp</td></tr>";
+            body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không có dữ liệu</td></tr>";
             document.getElementById('btnExportPDF').style.display = "none";
             return;
         }
@@ -412,6 +383,7 @@
                 <td>${formatDateDisplay(t.end)}</td>
                 <td>${t.ref || ''}</td>
                 <td>${t.status}</td>
+                <td>${t.comment || ''}</td>
             </tr>`;
         });
         document.getElementById('btnExportPDF').style.display = "inline-block";
@@ -419,7 +391,7 @@
 
     function exportToPDF() {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4'); // Khổ ngang A4
+        const doc = new jsPDF('l', 'mm', 'a4');
         doc.text("BAO CAO TIEN DO CONG VIEC", 14, 15);
         doc.setFontSize(10);
         doc.text("Ngay xuat: " + new Date().toLocaleDateString('vi-VN'), 14, 22);
@@ -427,34 +399,41 @@
         doc.autoTable({ 
             html: '#reportTable', 
             startY: 25,
-            theme: 'grid', // Kẻ ô rõ ràng
-            headStyles: { fillColor: [67, 97, 238] }, // Màu xanh header
-            styles: { font: 'helvetica', fontSize: 10 } 
+            theme: 'grid', 
+            headStyles: { fillColor: [67, 97, 238] },
+            styles: { font: 'helvetica', fontSize: 10 },
+            columnStyles: {
+                0: { cellWidth: 10 },
+                1: { cellWidth: 60 },
+                7: { cellWidth: 50 } // Cột giải trình
+            }
         });
         doc.save('Bao_cao_Deadline.pdf');
     }
 
     window.onclick = (e) => { if(e.target == document.getElementById('reportModal')) closeReportModal(); }
 
-    // --- OTHER ACTIONS ---
     function confirmComplete(id) { 
+        const t = allTasks.find(x => x.id === id);
         if(confirm("Bạn xác nhận đã hoàn thành ?")) { 
-            const t = allTasks.find(x => x.id === id);
             allTasks.forEach(item => { if(item.email === t.email) item.cffinish = currentID; });
             t.status = "Hoàn thành"; saveData(); 
         } 
     }
+    
+    function raiseHand(id) {
+        const t = allTasks.find(x => x.id === id);
+        const reason = prompt("Nhập lý do giải trình:", t.comment || "");
+        if (reason !== null) { t.comment = reason; saveData(); }
+    }
+
     function deleteTask(id) {
         const t = allTasks.find(x => x.id === id);
         const idx = whitelist.indexOf(currentID);
         if (idx === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) return alert("ID3 chỉ xóa trong 24h!");
         if(confirm("Xác nhận xóa?")) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
     }
-    function raiseHand(id) {
-        const t = allTasks.find(x => x.id === id);
-        const reason = prompt("Nhập lý do giải trình:", t.comment || "");
-        if (reason !== null) { t.comment = reason; saveData(); }
-    }
+
     async function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
         const msg = t.alertSent ? "Email này ĐÃ ĐƯỢC GỬI. Gửi lại?" : "Gửi email nhắc việc?";
