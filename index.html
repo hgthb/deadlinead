@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.25</title>
+    <title>Deadline Manage - Version Abv.26</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -12,24 +12,28 @@
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
+        /* --- CUSTOM NOTIFICATION MODAL (ABV.26) --- */
+        .custom-dialog-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
+        .custom-dialog { background: white; width: 90%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; animation: dialogFade 0.2s ease-out; }
+        .dialog-header { background: #f8fafc; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; color: var(--dark); display: flex; justify-content: space-between; align-items: center; }
+        .dialog-header span { color: var(--primary); }
+        .dialog-body { padding: 20px 15px; font-size: 14px; line-height: 1.5; color: #475569; text-align: center; }
+        .dialog-footer { padding: 10px 15px; background: #f8fafc; display: flex; gap: 10px; justify-content: center; }
+        .dialog-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; min-width: 80px; }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-cancel { background: #e2e8f0; color: #64748b; }
+        @keyframes dialogFade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
         .top-bar-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; min-height: 40px; position: relative; white-space: nowrap; }
         @media screen and (max-width: 768px) { .top-bar { min-width: 1000px; } }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fff; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 95%; max-width: 1300px; border-radius: 8px; max-height: 90vh; display: flex; flex-direction: column; }
-        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; align-self: flex-end; }
-        
-        body.is-readonly #adminForm, body.is-readonly .btn-add { pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; }
-
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
-        
         .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; display: inline-block; }
         .about-dropdown { display: none; position: absolute; top: 35px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; white-space: normal; }
 
         .admin-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; background: #fff; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         #adminForm { display: grid; grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; gap: 4px; padding: 8px; align-items: center; width: 100%; box-sizing: border-box; }
-
         @media screen and (max-width: 768px) { #adminForm { min-width: 1000px; } }
         #adminForm input { width: 100%; height: 32px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; padding: 0 5px; box-sizing: border-box; }
 
@@ -40,15 +44,12 @@
 
         .col-stt { width: 45px; text-align: center; }
         .col-1 { width: 28%; } .col-2, .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; } .col-5 { width: 12%; } .col-6 { width: 8%; } .col-7 { width: 10%; } .col-8 { width: 14%; text-align: right; }
-
         @media screen and (max-width: 768px) { table { min-width: 1100px; } }
 
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; min-width: 75px; text-align: center; display: inline-block; }
         .action-group { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; }
-        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: 0.2s; }
+        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
         .hand-icon { font-size: 18px; flex-shrink: 0; transition: 0.2s; }
-        .hand-icon:hover { transform: scale(1.2); }
-
         .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
         .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
     </style>
@@ -59,18 +60,14 @@
     <div class="top-bar-wrapper">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.25</b> 
+                📋 <b>DEADLINE MANAGE Abv.26</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
-                <div id="aboutContent" class="about-dropdown">
-                    Developed by Mr Hưng<br>
-                    Tel : 0965594679<br>
-                    Email : ndhung.pl@gmail.com
-                </div>
-                <span id="syncStatus" style="margin-left:10px; font-weight:normal; font-size:11px; color:var(--success);"></span> 
-                <span id="deviceStatus" style="font-size: 10px; color: #94a3b8; font-weight:normal;"></span>
+                <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
+                <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
+                <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span>
             </div>
             <div class="header-actions">
-                <button onclick="openReportModal()" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-chart-line"></i> Report</button>
+                <button onclick="alert('Báo cáo đang bảo trì')" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-chart-line"></i> Report</button>
                 <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer;">Admin Control</button>
             </div>
         </div>
@@ -110,6 +107,20 @@
     </div>
 </div>
 
+<div id="dialogOverlay" class="custom-dialog-overlay">
+    <div class="custom-dialog">
+        <div class="dialog-header">
+            <span>Notice!</span>
+            <i class="fa-solid fa-bell" style="font-size: 12px;"></i>
+        </div>
+        <div id="dialogBody" class="dialog-body"></div>
+        <div class="dialog-footer" id="dialogFooter">
+            <button id="dialogOk" class="dialog-btn btn-confirm">OK</button>
+            <button id="dialogCancel" class="dialog-btn btn-cancel" style="display:none;">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const BIN_ID = '6965ac34d0ea881f4067e559', READ_KEY = '$2a$10$E020cSPDeHQd0G9ytrUj3u1YSFJN0d9sP3X0B38kOk.sZoVNqZn8K', MASTER_KEY = '$2a$10$zN5MZaAsLugTkyNZA0ZHMu7CKiAktxDFCw1IGFEi4H46JOocrLTSy';
     const URL = "https://api.jsonbin.io/v3/b/" + BIN_ID;
@@ -118,6 +129,21 @@
     emailjs.init(EMAILJS_PUBLIC_KEY);
     let allTasks = [], whitelist = [];
     let emailList = ["hanhtd@acv.vn", "hailh@acv.vn", "toannd3@acv.vn", "hadtt1@acv.vn", "trangnth2@acv.vn", "thuypv@acv.vn", "haint@acv.vn", "thanhpn1@acv.vn", "huannq@acv.vn"];
+
+    // HÀM HIỂN THỊ THÔNG BÁO TÙY CHỈNH (ABV.26)
+    function showNotice(msg, callback = null, isConfirm = false) {
+        const overlay = document.getElementById('dialogOverlay');
+        const body = document.getElementById('dialogBody');
+        const okBtn = document.getElementById('dialogOk');
+        const cancelBtn = document.getElementById('dialogCancel');
+        
+        body.innerText = msg;
+        cancelBtn.style.display = isConfirm ? 'block' : 'none';
+        overlay.style.display = 'flex';
+
+        okBtn.onclick = () => { overlay.style.display = 'none'; if(callback) callback(true); };
+        cancelBtn.onclick = () => { overlay.style.display = 'none'; if(callback) callback(false); };
+    }
 
     const currentID = (() => {
         let id = localStorage.getItem('my_unique_device_id');
@@ -130,11 +156,11 @@
             const res = await fetch(URL, { headers: { 'X-Access-Key': READ_KEY, 'X-Bin-Meta': false } });
             const data = await res.json();
             allTasks = data.tasks || []; whitelist = data.whitelist || [];
-            if (data.emailList && data.emailList.length > 0) emailList = data.emailList;
+            if (data.emailList) emailList = data.emailList;
             await silentSecurityCheck();
             updateEmailDatalist();
             renderTable();
-        } catch (e) { console.error("Lỗi dữ liệu"); }
+        } catch (e) { console.error("Lỗi tải"); }
     }
 
     function updateEmailDatalist() {
@@ -159,9 +185,9 @@
     }
 
     async function saveData() {
-        document.getElementById('syncStatus').innerText = "Đồng bộ...";
+        document.getElementById('syncStatus').innerText = "Sync...";
         await silentSave();
-        document.getElementById('syncStatus').innerText = "Đã lưu";
+        document.getElementById('syncStatus').innerText = "Saved";
         setTimeout(() => document.getElementById('syncStatus').innerText = "", 2000);
         renderTable();
     }
@@ -169,7 +195,13 @@
     function addTask() {
         const n = document.getElementById('taskName').value, s = document.getElementById('startDate').value, e = document.getElementById('deadline').value;
         const mail = document.getElementById('emailRecipient').value.trim();
-        if(!n || !s || !e || !mail) return alert("Thiếu thông tin!");
+        
+        // CẬP NHẬT CÂU THÔNG BÁO MỚI (ABV.26)
+        if(!n || !s || !e || !mail) {
+            showNotice("Bạn cần nhập đủ các thông tin !.");
+            return;
+        }
+
         if (mail && !emailList.includes(mail)) { emailList.push(mail); updateEmailDatalist(); }
         allTasks.push({ id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: mail, start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value, status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID, cffinish: "", comment: "" });
         saveData();
@@ -185,31 +217,18 @@
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
             let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
-            
             let compDisable = true;
             if (deviceIndex >= 3 && t.status === "Đang làm") {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
-
             let delDisable = (deviceIndex >= 3) || (t.status === "Hoàn thành" || t.status === "Quá hạn");
             if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) delDisable = true;
 
             const handColor = (t.comment && t.comment.trim() !== "") ? '#2ecc71' : '#f1c40f'; 
-            
-            // --- CẬP NHẬT LOGIC CLICK CHO ADMIN (ABV.25) ---
             const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
-            
-            let handClick = "";
-            if (deviceIndex >= 3) {
-                // Nhân viên click để nhập
-                handClick = `onclick="raiseHand('${t.id}')"`;
-            } else {
-                // Admin click để xem "Tooltip" dạng alert
-                handClick = `onclick="alert('${handTip}')"`;
-            }
-
-            const handHtml = `<i class="fa-solid fa-hand hand-icon" style="color:${handColor}; cursor:pointer" title="${handTip}" ${handClick}></i>`;
+            let handClick = deviceIndex >= 3 ? `onclick="raiseHand('${t.id}')"` : `onclick="showNotice('${handTip}')"`;
+            const handHtml = `<i class="fa-solid fa-hand hand-icon" style="color:${handColor}; cursor:pointer" ${handClick}></i>`;
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -224,8 +243,8 @@
                     <td class="col-8">
                         <div class="action-group">
                             ${handHtml}
-                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''} title="${t.status}"><i class="fa-solid fa-check"></i></button>
-                            ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" onclick="sendManualMail('${t.id}')" title="${t.alertSent?'Đã gửi email tự động':''}"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''}><i class="fa-solid fa-check"></i></button>
+                            ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" onclick="sendManualMail('${t.id}')"><i class="fa-solid fa-envelope"></i></button>` : ''}
                             <button class="btn-sm" style="background:#ef476f; color:white; opacity:${delDisable?'0.4':'1'};" onclick="deleteTask('${t.id}')" ${delDisable?'disabled':''}><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </td>
@@ -233,35 +252,41 @@
         });
     }
 
-    async function confirmComplete(id) { 
-        const tIdx = allTasks.findIndex(x => x.id === id);
-        if(!confirm(`Bạn xác nhận hoàn thành công việc có email ${allTasks[tIdx].email} ?`)) return;
-        allTasks.forEach(item => { if (item.email === allTasks[tIdx].email) item.cffinish = currentID; });
-        allTasks[tIdx].status = "Hoàn thành"; await saveData();
+    function confirmComplete(id) { 
+        const t = allTasks.find(x => x.id === id);
+        showNotice(`Bạn xác nhận hoàn thành công việc có email ${t.email} ?`, (ok) => {
+            if(ok) {
+                allTasks.forEach(item => { if (item.email === t.email) item.cffinish = currentID; });
+                t.status = "Hoàn thành"; saveData();
+            }
+        }, true);
     }
 
     function raiseHand(id) {
         const t = allTasks.find(x => x.id === id);
-        const reason = prompt("Nhập giải trình/ghi chú cho công việc này:", t.comment || "");
+        const reason = prompt("Nhập giải trình cho công việc này:", t.comment || "");
         if (reason !== null) { t.comment = reason; saveData(); }
     }
 
-    async function deleteTask(id) {
-        if(confirm("Xác nhận xóa?")) { allTasks = allTasks.filter(x => x.id !== id); await saveData(); }
+    function deleteTask(id) {
+        showNotice("Xác nhận xóa công việc này?", (ok) => {
+            if(ok) { allTasks = allTasks.filter(x => x.id !== id); saveData(); }
+        }, true);
     }
 
-    async function sendManualMail(id) {
+    function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
-        if(confirm("Đã gửi email tự động, bạn muốn gửi lại không ?")) {
-            const parts = t.end.split('-');
-            const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
-            t.alertSent = true; await silentSave(); renderTable();
-        }
+        showNotice("Đã gửi email tự động, bạn muốn gửi lại không ?", async (ok) => {
+            if(ok) {
+                const parts = t.end.split('-');
+                const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
+                t.alertSent = true; await silentSave(); renderTable();
+            }
+        }, true);
     }
 
     function toggleAbout() { document.getElementById('aboutContent').style.display = (document.getElementById('aboutContent').style.display === 'block') ? 'none' : 'block'; }
-    function openReportModal() { alert("Chức năng Report đang được bảo trì."); }
     window.onclick = (e) => { if (!e.target.matches('.about-btn')) document.getElementById('aboutContent').style.display = 'none'; }
     window.onload = fetchData;
 </script>
