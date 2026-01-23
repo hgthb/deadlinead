@@ -3,77 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.26</title>
+    <title>Deadline Manage - Version Abv.27</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
-        /* --- CUSTOM NOTIFICATION MODAL (ABV.26) --- */
+        /* --- CẢI TIẾN HỢP NHẤT KHỐI TRƯỢT (ABV.27) --- */
+        .app-scroll-container {
+            flex-grow: 1;
+            overflow-x: auto; /* Trượt ngang toàn cục */
+            display: flex;
+            flex-direction: column;
+            -webkit-overflow-scrolling: touch;
+            padding: 5px 10px;
+        }
+
+        .content-inner {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-width: 100%; /* Mặc định trên Desktop */
+        }
+
+        @media screen and (max-width: 768px) {
+            .content-inner {
+                min-width: 1100px; /* Ép toàn bộ khối rộng ra trên Mobile để trượt chung */
+            }
+        }
+
+        /* Style Header */
+        .top-bar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; 
+            min-height: 40px; flex-shrink: 0; white-space: nowrap;
+        }
+
+        /* Style Form nhập liệu */
+        #adminForm { 
+            display: grid; grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; 
+            gap: 4px; padding: 8px; background: #fff; border-radius: 8px; margin-bottom: 5px; 
+            align-items: center; flex-shrink: 0; 
+        }
+        #adminForm input { width: 100%; height: 32px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; padding: 0 5px; box-sizing: border-box; }
+
+        /* Style Bảng dữ liệu */
+        .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border-bottom: 1px solid #f8fafc; font-size: 12px; height: 42px; padding: 0 10px; white-space: nowrap; }
+        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; z-index: 10; text-transform: uppercase; font-size: 11px; }
+
+        /* --- QUY ĐỊNH CỘT --- */
+        .col-stt { width: 45px; text-align: center; }
+        .col-1 { width: 28%; } .col-2, .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; } .col-5 { width: 12%; } .col-6 { width: 8%; } .col-7 { width: 10%; } .col-8 { width: 14%; text-align: right; }
+
+        /* Custom Dialog (giữ nguyên từ Abv.26) */
         .custom-dialog-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
-        .custom-dialog { background: white; width: 90%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; animation: dialogFade 0.2s ease-out; }
-        .dialog-header { background: #f8fafc; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; color: var(--dark); display: flex; justify-content: space-between; align-items: center; }
-        .dialog-header span { color: var(--primary); }
+        .custom-dialog { background: white; width: 90%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
+        .dialog-header { background: #f8fafc; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .dialog-body { padding: 20px 15px; font-size: 14px; line-height: 1.5; color: #475569; text-align: center; }
         .dialog-footer { padding: 10px 15px; background: #f8fafc; display: flex; gap: 10px; justify-content: center; }
         .dialog-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; min-width: 80px; }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-cancel { background: #e2e8f0; color: #64748b; }
-        @keyframes dialogFade { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-        .top-bar-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; min-height: 40px; position: relative; white-space: nowrap; }
-        @media screen and (max-width: 768px) { .top-bar { min-width: 1000px; } }
-
-        .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
-        .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; display: inline-block; }
-        .about-dropdown { display: none; position: absolute; top: 35px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; white-space: normal; }
-
-        .admin-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; background: #fff; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
-        #adminForm { display: grid; grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; gap: 4px; padding: 8px; align-items: center; width: 100%; box-sizing: border-box; }
-        @media screen and (max-width: 768px) { #adminForm { min-width: 1000px; } }
-        #adminForm input { width: 100%; height: 32px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; padding: 0 5px; box-sizing: border-box; }
-
-        .main-content { background: white; border-radius: 8px; flex-grow: 1; overflow: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.1); -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border-bottom: 1px solid #f8fafc; font-size: 12px; height: 42px; padding: 0 10px; white-space: nowrap; }
-        th { background: #f8fafc; color: #64748b; position: sticky; top: 0; z-index: 10; text-transform: uppercase; font-size: 11px; }
-
-        .col-stt { width: 45px; text-align: center; }
-        .col-1 { width: 28%; } .col-2, .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; } .col-5 { width: 12%; } .col-6 { width: 8%; } .col-7 { width: 10%; } .col-8 { width: 14%; text-align: right; }
-        @media screen and (max-width: 768px) { table { min-width: 1100px; } }
-
+        /* Other UI elements */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; min-width: 75px; text-align: center; display: inline-block; }
         .action-group { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; }
-        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
-        .hand-icon { font-size: 18px; flex-shrink: 0; transition: 0.2s; }
-        .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
-        .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
+        .btn-sm { width: 28px; height: 28px; border: none; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+        .hand-icon { font-size: 18px; cursor: pointer; transition: 0.2s; }
+        .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; }
+        .about-dropdown { display: none; position: absolute; top: 35px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; }
+        
+        body.is-readonly #adminForm, body.is-readonly .btn-add { pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="top-bar-wrapper">
+<div class="app-scroll-container">
+    <div class="content-inner">
+        
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.26</b> 
+                📋 <b>DEADLINE MANAGE Abv.27</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
-                <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
+                <div id="aboutContent" class="about-dropdown">
+                    Developed by Mr Hưng<br>
+                    Tel : 0965594679<br>
+                    Email : ndhung.pl@gmail.com
+                </div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
                 <span id="deviceStatus" style="font-size: 10px; color: #94a3b8;"></span>
             </div>
             <div class="header-actions">
-                <button onclick="alert('Báo cáo đang bảo trì')" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-chart-line"></i> Report</button>
+                <button onclick="showNotice('Chức năng Report đang bảo trì.')" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-chart-line"></i> Report</button>
                 <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer;">Admin Control</button>
             </div>
         </div>
-    </div>
 
-    <div class="admin-scroll-wrapper">
         <div id="adminForm">
             <input type="text" id="taskName" placeholder="Tên việc...">
             <input type="text" id="taskDept" placeholder="Bộ phận/người xử lý..">
@@ -85,36 +115,34 @@
             <datalist id="emailList"></datalist>
             <button class="btn-add" id="btnAdd" style="height:32px; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;" onclick="addTask()">THÊM</button>
         </div>
-    </div>
 
-    <div class="main-content">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th class="col-1">Việc/ Bộ phận/ Người xử lý-Email</th>
-                    <th class="col-2">Bắt đầu</th>
-                    <th class="col-3">Hạn chót</th>
-                    <th class="col-4">Lần</th>
-                    <th class="col-5">Tham chiếu</th>
-                    <th class="col-6">Tiến độ</th>
-                    <th class="col-7">Trạng thái</th>
-                    <th class="col-8">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody id="taskBody"></tbody>
-        </table>
+        <div class="main-content">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th class="col-1">Việc/ Bộ phận/ Người xử lý-Email</th>
+                        <th class="col-2">Bắt đầu</th>
+                        <th class="col-3">Hạn chót</th>
+                        <th class="col-4">Lần</th>
+                        <th class="col-5">Tham chiếu</th>
+                        <th class="col-6">Tiến độ</th>
+                        <th class="col-7">Trạng thái</th>
+                        <th class="col-8">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="taskBody"></tbody>
+            </table>
+        </div>
+
     </div>
 </div>
 
 <div id="dialogOverlay" class="custom-dialog-overlay">
     <div class="custom-dialog">
-        <div class="dialog-header">
-            <span>Notice!</span>
-            <i class="fa-solid fa-bell" style="font-size: 12px;"></i>
-        </div>
+        <div class="dialog-header"><span>Notice!</span><i class="fa-solid fa-bell" style="font-size: 12px; color:var(--primary);"></i></div>
         <div id="dialogBody" class="dialog-body"></div>
-        <div class="dialog-footer" id="dialogFooter">
+        <div class="dialog-footer">
             <button id="dialogOk" class="dialog-btn btn-confirm">OK</button>
             <button id="dialogCancel" class="dialog-btn btn-cancel" style="display:none;">Cancel</button>
         </div>
@@ -127,20 +155,16 @@
     const EMAILJS_PUBLIC_KEY = 'K29qboR4uZpsyMu0Z', EMAILJS_SERVICE_ID = 'service_s73hjtp', EMAILJS_TEMPLATE_ID = 'template_0cgys98';
 
     emailjs.init(EMAILJS_PUBLIC_KEY);
-    let allTasks = [], whitelist = [];
-    let emailList = ["hanhtd@acv.vn", "hailh@acv.vn", "toannd3@acv.vn", "hadtt1@acv.vn", "trangnth2@acv.vn", "thuypv@acv.vn", "haint@acv.vn", "thanhpn1@acv.vn", "huannq@acv.vn"];
+    let allTasks = [], whitelist = [], emailList = ["hanhtd@acv.vn", "hailh@acv.vn", "toannd3@acv.vn", "hadtt1@acv.vn", "trangnth2@acv.vn", "thuypv@acv.vn", "haint@acv.vn", "thanhpn1@acv.vn", "huannq@acv.vn"];
 
-    // HÀM HIỂN THỊ THÔNG BÁO TÙY CHỈNH (ABV.26)
     function showNotice(msg, callback = null, isConfirm = false) {
         const overlay = document.getElementById('dialogOverlay');
         const body = document.getElementById('dialogBody');
         const okBtn = document.getElementById('dialogOk');
         const cancelBtn = document.getElementById('dialogCancel');
-        
         body.innerText = msg;
         cancelBtn.style.display = isConfirm ? 'block' : 'none';
         overlay.style.display = 'flex';
-
         okBtn.onclick = () => { overlay.style.display = 'none'; if(callback) callback(true); };
         cancelBtn.onclick = () => { overlay.style.display = 'none'; if(callback) callback(false); };
     }
@@ -160,17 +184,13 @@
             await silentSecurityCheck();
             updateEmailDatalist();
             renderTable();
-        } catch (e) { console.error("Lỗi tải"); }
+        } catch (e) { console.error("Error loading data"); }
     }
 
     function updateEmailDatalist() {
         const listEl = document.getElementById('emailList');
         listEl.innerHTML = "";
-        emailList.forEach(email => {
-            const opt = document.createElement('option');
-            opt.value = email;
-            listEl.appendChild(opt);
-        });
+        emailList.forEach(email => { const opt = document.createElement('option'); opt.value = email; listEl.appendChild(opt); });
     }
 
     async function silentSecurityCheck() {
@@ -195,13 +215,7 @@
     function addTask() {
         const n = document.getElementById('taskName').value, s = document.getElementById('startDate').value, e = document.getElementById('deadline').value;
         const mail = document.getElementById('emailRecipient').value.trim();
-        
-        // CẬP NHẬT CÂU THÔNG BÁO MỚI (ABV.26)
-        if(!n || !s || !e || !mail) {
-            showNotice("Bạn cần nhập đủ các thông tin !.");
-            return;
-        }
-
+        if(!n || !s || !e || !mail) return showNotice("Bạn cần nhập đủ các thông tin !.");
         if (mail && !emailList.includes(mail)) { emailList.push(mail); updateEmailDatalist(); }
         allTasks.push({ id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: mail, start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value, status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID, cffinish: "", comment: "" });
         saveData();
@@ -228,7 +242,6 @@
             const handColor = (t.comment && t.comment.trim() !== "") ? '#2ecc71' : '#f1c40f'; 
             const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             let handClick = deviceIndex >= 3 ? `onclick="raiseHand('${t.id}')"` : `onclick="showNotice('${handTip}')"`;
-            const handHtml = `<i class="fa-solid fa-hand hand-icon" style="color:${handColor}; cursor:pointer" ${handClick}></i>`;
 
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -242,9 +255,9 @@
                     <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <div class="action-group">
-                            ${handHtml}
+                            <i class="fa-solid fa-hand hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
                             <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''}><i class="fa-solid fa-check"></i></button>
-                            ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" onclick="sendManualMail('${t.id}')"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                            ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" onclick="sendManualMail('${t.id}')" title="${t.alertSent?'Đã gửi email tự động':''}"><i class="fa-solid fa-envelope"></i></button>` : ''}
                             <button class="btn-sm" style="background:#ef476f; color:white; opacity:${delDisable?'0.4':'1'};" onclick="deleteTask('${t.id}')" ${delDisable?'disabled':''}><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </td>
