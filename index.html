@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deadline Manage - Version Abv.23</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Deadline Manage - Version Abv.24</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -12,6 +12,28 @@
         :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 5px 10px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         
+        /* --- CẢI TIẾN TRƯỢT NGANG TIÊU ĐỀ (ABV.24) --- */
+        .top-bar-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+        }
+        .top-bar { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 15px; 
+            min-height: 40px;
+            position: relative;
+            white-space: nowrap; /* Ép nội dung không xuống hàng */
+        }
+        @media screen and (max-width: 768px) {
+            .top-bar { min-width: 1000px; } /* Đảm bảo đủ rộng để trượt ngang độc lập */
+        }
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fff; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 95%; max-width: 1300px; border-radius: 8px; max-height: 90vh; display: flex; flex-direction: column; }
         .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; align-self: flex-end; }
@@ -19,10 +41,9 @@
         body.is-readonly #adminForm, body.is-readonly .btn-add { pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; }
 
         .container { max-width: 1450px; margin: auto; width: 100%; display: flex; flex-direction: column; height: 100%; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 15px; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; position: relative; }
         
-        .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; }
-        .about-dropdown { display: none; position: absolute; top: 40px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; }
+        .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; display: inline-block; }
+        .about-dropdown { display: none; position: absolute; top: 35px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; white-space: normal; }
 
         .admin-scroll-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; background: #fff; border-radius: 8px; margin-bottom: 5px; flex-shrink: 0; }
         #adminForm { display: grid; grid-template-columns: 2.3fr 1.2fr 104px 104px 32px 1.4fr 1.6fr 80px; gap: 4px; padding: 8px; align-items: center; width: 100%; box-sizing: border-box; }
@@ -53,20 +74,23 @@
 <body>
 
 <div class="container">
-    <div class="top-bar">
-        <div class="brand">
-            📋 <b>DEADLINE MANAGE Abv.23</b> 
-            <span class="about-btn" ondblclick="toggleAbout()">About</span>
-            <div id="aboutContent" class="about-dropdown">
-                Developed by Mr Hưng<br>
-                Tel : 0965594679<br>
-                Email : ndhung.pl@gmail.com
+    <div class="top-bar-wrapper">
+        <div class="top-bar">
+            <div class="brand">
+                📋 <b>DEADLINE MANAGE Abv.24</b> 
+                <span class="about-btn" ondblclick="toggleAbout()">About</span>
+                <div id="aboutContent" class="about-dropdown">
+                    Developed by Mr Hưng<br>
+                    Tel : 0965594679<br>
+                    Email : ndhung.pl@gmail.com
+                </div>
+                <span id="syncStatus" style="margin-left:10px; font-weight:normal; font-size:11px; color:var(--success);"></span> 
+                <span id="deviceStatus" style="font-size: 10px; color: #94a3b8; font-weight:normal;"></span>
             </div>
-            <span id="syncStatus"></span> <span id="deviceStatus" style="font-size: 10px;"></span>
-        </div>
-        <div>
-            <button onclick="openReportModal()" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer;"><i class="fa-solid fa-chart-line"></i> Report</button>
-            <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px;">Admin Control</button>
+            <div class="header-actions">
+                <button onclick="openReportModal()" style="background:#64748b; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer; margin-right:5px;"><i class="fa-solid fa-chart-line"></i> Report</button>
+                <button style="background:#334155; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:11px; cursor:pointer;">Admin Control</button>
+            </div>
         </div>
     </div>
 
@@ -186,7 +210,6 @@
                 else if (t.email === lockedEmail) compDisable = false;
             }
 
-            // Logic phân quyền xóa và hiệu ứng mờ (Abv.23)
             let delDisable = (deviceIndex >= 3) || (t.status === "Hoàn thành" || t.status === "Quá hạn");
             if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) delDisable = true;
 
@@ -238,7 +261,9 @@
     async function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
         if(confirm("Đã gửi email tự động, bạn muốn gửi lại không ?")) {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: t.end, ref: t.ref, dept: t.dept, to_email: t.email });
+            const parts = t.end.split('-');
+            const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
             t.alertSent = true; await silentSave(); renderTable();
         }
     }
