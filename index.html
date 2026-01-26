@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.32</title>
+    <title>Deadline Manage - Version Abv.34</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.32</b> 
+                📋 <b>DEADLINE MANAGE Abv.34</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -117,40 +117,16 @@
             <label>Từ ngày:</label> <input type="date" id="repStartDate">
             <label>Đến ngày:</label> <input type="date" id="repEndDate">
             <label>Trạng thái:</label> 
-            <select id="repStatus">
-                <option value="All">Tất cả</option>
-                <option value="Đang làm">Đang làm</option>
-                <option value="Hoàn thành">Hoàn thành</option>
-                <option value="Quá hạn">Quá hạn</option>
-            </select>
-            <label>Email:</label> 
-            <select id="repEmailFilter">
-                <option value="All">Tất cả Email</option>
-            </select>
-            
+            <select id="repStatus"><option value="All">Tất cả</option><option value="Đang làm">Đang làm</option><option value="Hoàn thành">Hoàn thành</option><option value="Quá hạn">Quá hạn</option></select>
+            <label>Email:</label> <select id="repEmailFilter"><option value="All">Tất cả Email</option></select>
             <button onclick="generateReport()" style="background:var(--primary); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer;">Xem báo cáo</button>
             <button id="btnExportPdf" onclick="exportToPDF()" style="background:var(--danger); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer; display:none;">Xuất PDF</button>
         </div>
-        
         <div style="overflow:auto; flex-grow:1; border:1px solid #eee; padding:10px;" id="reportArea">
             <div id="pdfContent">
-                <div id="pdfHeader" style="display:none; text-align:center;">
-                    <h2 style="margin-bottom:5px;">BAO CAO THEO DOI DEADLINE CONG VIEC</h2>
-                    <div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div>
-                </div>
+                <div id="pdfHeader" style="display:none; text-align:center;"><h2>BAO CAO THEO DOI DEADLINE CONG VIEC</h2><div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div></div>
                 <table class="pdf-table" id="reportTable">
-                    <thead>
-                        <tr>
-                            <th style="width:30px;">STT</th>
-                            <th>Nội dung công việc / Bộ phận</th>
-                            <th style="width:80px;">Bắt đầu</th>
-                            <th style="width:80px;">Hạn chót</th>
-                            <th style="width:40px;">Lần</th>
-                            <th>Tham chiếu</th>
-                            <th style="width:90px;">Trạng thái</th>
-                            <th>Giải trình</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="width:30px;">STT</th><th>Nội dung công việc / Bộ phận</th><th style="width:80px;">Bắt đầu</th><th style="width:80px;">Hạn chót</th><th style="width:40px;">Lần</th><th>Tham chiếu</th><th style="width:90px;">Trạng thái</th><th>Giải trình</th></tr></thead>
                     <tbody id="reportBody"></tbody>
                 </table>
             </div>
@@ -203,8 +179,37 @@
             if (data.emailList) emailList = data.emailList;
             await silentSecurityCheck();
             updateEmailDatalist();
+            // KHÔI PHỤC: Chạy logic kiểm tra quá hạn và tự động gửi mail
+            await checkOverdueAndAutoMail();
             renderTable();
         } catch (e) { console.error("Error"); }
+    }
+
+    // --- HÀM KHÔI PHỤC LOGIC TỰ ĐỘNG (ABV.34) ---
+    async function checkOverdueAndAutoMail() {
+        const now = new Date(); now.setHours(0,0,0,0);
+        let hasChanges = false;
+        const deviceIndex = whitelist.indexOf(currentID);
+
+        for (let t of allTasks) {
+            const deadlineDate = new Date(t.end);
+            if (deadlineDate < now && t.status !== "Hoàn thành") {
+                if (t.status !== "Quá hạn") {
+                    t.status = "Quá hạn";
+                    hasChanges = true;
+                }
+                // Tự động gửi mail (Chỉ thiết bị ID1 thực hiện để tránh spam)
+                if (deviceIndex === 0 && !t.alertSent) {
+                    const parts = t.end.split('-'); const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
+                    try {
+                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
+                        t.alertSent = true;
+                        hasChanges = true;
+                    } catch (err) { console.error("Auto mail failed"); }
+                }
+            }
+        }
+        if (hasChanges) await silentSave();
     }
 
     function updateEmailDatalist() {
@@ -325,7 +330,7 @@
             let emailMatch = (emailFilter === "All") ? true : (t.email === emailFilter);
             return dateMatch && statusMatch && emailMatch;
         });
-        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không có dữ liệu phù hợp</td></tr>"; return; }
+        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Trống</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
             body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${t.comment || ''}</td></tr>`;
