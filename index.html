@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.40</title>
+    <title>Deadline Manage - Version Abv.41</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.40</b> 
+                📋 <b>DEADLINE MANAGE Abv.41</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -81,7 +81,7 @@
             <input type="text" id="taskDept" placeholder="Bộ phận/người xử lý..">
             <input type="date" id="startDate">
             <input type="date" id="deadline">
-            <input type="number" id="iterCount" placeholder="Lần...">
+            <input type="text" id="iterCount" placeholder="Lần...">
             <input type="text" id="taskRef" placeholder="Tham chiếu...">
             <input type="text" id="emailRecipient" list="emailList" placeholder="Email nhận...">
             <datalist id="emailList"></datalist>
@@ -262,7 +262,6 @@
         document.getElementById('taskName').focus();
     }
 
-    // --- BỘ LỌC ĐỊNH DẠNG COMMENT (Abv.40) ---
     function formatCommentForDisplay(rawComment) {
         if (!rawComment || rawComment.trim() === "") return "";
         const parts = rawComment.split(' | [Phản hồi Admin]: ');
@@ -293,8 +292,6 @@
             const hasComment = t.comment && t.comment.trim() !== "";
             const handColor = hasComment ? '#2ecc71' : '#f1c40f'; 
             const iconClass = hasComment ? 'fa-handshake' : 'fa-hand';
-            
-            // Áp dụng định dạng mới (Abv.40)
             const formattedTip = formatCommentForDisplay(t.comment);
             const handTip = hasComment ? formattedTip : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             
@@ -306,7 +303,6 @@
                     handClick = `onclick="raiseHand('${t.id}')"`;
                 }
             } else {
-                // Thoát dấu nháy đơn và xử lý xuống dòng cho JS string
                 const safeTip = handTip.replace(/'/g, "\\'").replace(/\n/g, "\\n");
                 handClick = `onclick="showNotice('${safeTip}')"`;
             }
@@ -347,7 +343,6 @@
         const clientPart = t.comment.split(' | [Phản hồi Admin]: ')[0];
         const response = prompt(`NHÂN VIÊN GIẢI TRÌNH:\n"${clientPart}"\n\nNhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`, "");
         if (response !== null && response.trim() !== "") {
-            // Giữ cấu trúc separator để bộ parser Abv.40 nhận diện được
             t.comment = `${clientPart} | [Phản hồi Admin]: ${response.trim()}`;
             saveData();
         }
@@ -372,7 +367,6 @@
         if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Trống</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
-            // Áp dụng định dạng mới vào báo cáo
             const formattedComment = formatCommentForDisplay(t.comment);
             const displayComment = formattedComment.replace(/\n/g, '<br>');
             body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${displayComment}</td></tr>`;
@@ -383,7 +377,7 @@
     function exportToPDF() {
         const element = document.getElementById('pdfContent'), header = document.getElementById('pdfHeader');
         header.style.display = "block";
-        document.getElementById('pdfDateDisplay').innerText = "Ngày làm báo cáo: " + new Date().toLocaleDateString('vi-VN');
+        document.getElementById('pdfDateDisplay').innerText = "Ngay lam bao cao : " + new Date().toLocaleDateString('vi-VN');
         html2pdf().set({ margin: 10, filename: 'Bao_cao_Deadline.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } }).from(element).save().then(() => header.style.display = "none");
     }
 
@@ -392,7 +386,6 @@
         const currentClientPart = t.comment.split(' | [Phản hồi Admin]: ')[0];
         const reason = prompt("Nhập giải trình:", currentClientPart || "");
         if (reason !== null) {
-            // Khi nhân viên sửa, giữ nguyên phần admin hồi đáp nếu có
             const adminPart = t.comment.split(' | [Phản hồi Admin]: ')[1];
             t.comment = adminPart ? `${reason} | [Phản hồi Admin]: ${adminPart}` : reason;
             saveData();
