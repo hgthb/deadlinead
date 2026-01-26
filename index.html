@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.31</title>
+    <title>Deadline Manage - Version Abv.32</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.31</b> 
+                📋 <b>DEADLINE MANAGE Abv.32</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -352,7 +352,8 @@
 
     function sendManualMail(id) {
         const t = allTasks.find(x => x.id === id);
-        showNotice("Đã gửi email tự động, bạn muốn gửi lại không ?", async (ok) => {
+        const confirmMsg = t.alertSent ? "Đã gửi email nhắc việc, bạn muốn gửi lại không ?" : "Gửi email nhắc việc cho công việc này ?";
+        showNotice(confirmMsg, async (ok) => {
             if(ok) {
                 const parts = t.end.split('-'); const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
                 await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
