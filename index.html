@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.36</title>
+    <title>Deadline Manage - Version Abv.37</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.36</b> 
+                📋 <b>DEADLINE MANAGE Abv.37</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -158,7 +158,8 @@
         const body = document.getElementById('dialogBody');
         const okBtn = document.getElementById('dialogOk');
         const cancelBtn = document.getElementById('dialogCancel');
-        body.innerText = msg;
+        // Thay thế ký tự xuống dòng bằng thẻ <br> để hiển thị trong modal Notice
+        body.innerHTML = msg.replace(/\n/g, '<br>');
         cancelBtn.style.display = isConfirm ? 'block' : 'none';
         overlay.style.display = 'flex';
         okBtn.onclick = () => { overlay.style.display = 'none'; if(callback) callback(true); };
@@ -181,37 +182,23 @@
             updateEmailDatalist();
             await checkOverdueAndAutoMail();
             renderTable();
-            // Focus ô đầu tiên khi khởi động
             document.getElementById('taskName').focus();
+            setupEnterNavigation();
         } catch (e) { console.error("Error"); }
     }
 
-    // --- CẬP NHẬT: Logic điều hướng Enter (ABV.36) ---
     function setupEnterNavigation() {
-        const inputs = [
-            document.getElementById('taskName'),
-            document.getElementById('taskDept'),
-            document.getElementById('startDate'),
-            document.getElementById('deadline'),
-            document.getElementById('iterCount'),
-            document.getElementById('taskRef'),
-            document.getElementById('emailRecipient')
-        ];
-
+        const inputs = ['taskName', 'taskDept', 'startDate', 'deadline', 'iterCount', 'taskRef', 'emailRecipient'].map(id => document.getElementById(id));
         inputs.forEach((input, index) => {
-            input.addEventListener('keydown', (e) => {
+            input.onkeydown = (e) => {
                 if (e.key === 'Enter') {
                     if (input.value.trim() !== "") {
                         e.preventDefault();
-                        if (index < inputs.length - 1) {
-                            inputs[index + 1].focus();
-                        } else {
-                            // Ô cuối cùng (Email), kích hoạt click THÊM
-                            addTask();
-                        }
+                        if (index < inputs.length - 1) inputs[index + 1].focus();
+                        else addTask();
                     }
                 }
-            });
+            };
         });
     }
 
@@ -272,10 +259,7 @@
         if (mail && !emailList.includes(mail)) { emailList.push(mail); updateEmailDatalist(); }
         allTasks.push({ id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: mail, start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value, status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID, cffinish: "", comment: "" });
         saveData();
-        
-        // --- CẬP NHẬT: Xóa sạch 7 ô và quay lại ô đầu (ABV.36) ---
-        const fields = ['taskName', 'taskDept', 'startDate', 'deadline', 'iterCount', 'taskRef', 'emailRecipient'];
-        fields.forEach(f => document.getElementById(f).value = "");
+        ['taskName', 'taskDept', 'startDate', 'deadline', 'iterCount', 'taskRef', 'emailRecipient'].forEach(f => document.getElementById(f).value = "");
         document.getElementById('taskName').focus();
     }
 
@@ -297,26 +281,25 @@
             if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) delDisable = true;
             
             const handColor = (t.comment && t.comment.trim() !== "") ? '#2ecc71' : '#f1c40f'; 
-            const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
+            // Cấu trúc Tip hiển thị xuống dòng cho HTML Tooltip mặc định (dùng \n)
+            const handTip = t.comment ? `Nội dung giải trình:\n${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             
-            // --- CẬP NHẬT: Khóa Rise Hand theo Email dành cho nhân viên (ABV.36) ---
             let handClick = "";
             if (deviceIndex >= 3) {
                 if (lockedEmail && t.email !== lockedEmail) {
-                    // Nếu đã bị khóa vào một email khác
                     handClick = `onclick="showNotice('Bạn chỉ được phép giải trình cho công việc thuộc email: ${lockedEmail}')"`;
                 } else {
                     handClick = `onclick="raiseHand('${t.id}')"`;
                 }
             } else {
-                // Admin xem giải trình
-                handClick = `onclick="showNotice('${handTip}')"`;
+                handClick = `onclick="showNotice('${handTip.replace(/'/g, "\\'")}')"`;
             }
 
             const isAdmin12 = (deviceIndex === 0 || deviceIndex === 1);
             const hasComment = t.comment && t.comment.trim() !== "";
             const statusStyle = (isAdmin12 && hasComment) ? 'cursor:pointer; text-decoration:underline;' : '';
             const statusClick = (isAdmin12 && hasComment) ? `onclick="adminResponseToComment('${t.id}')"` : '';
+            
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt}</td>
@@ -329,7 +312,7 @@
                     <td class="col-7" ${statusClick} style="${statusStyle}"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <div class="action-group">
-                            <i class="fa-solid fa-hand hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
+                            <i class="fa-solid fa-handshake hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
                             <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''} title="${t.status}"><i class="fa-solid fa-check"></i></button>
                             ${isOverdue ? `
                             <button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" 
@@ -344,11 +327,14 @@
         });
     }
 
+    // --- NÂNG CẤP PHẢN HỒI XUỐNG DÒNG (ABV.37) ---
     function adminResponseToComment(id) {
         const t = allTasks.find(x => x.id === id);
-        const response = prompt(`Nhân viên giải trình: "${t.comment}"\n\nNhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`, "");
+        // Làm sạch nội dung phản hồi cũ nếu có để Admin nhập cái mới
+        const response = prompt(`NHÂN VIÊN GIẢI TRÌNH:\n"${t.comment.split('\n')[0]}"\n\nNhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`, "");
         if (response !== null && response.trim() !== "") {
-            t.comment = `${t.comment} | [Phản hồi Admin]: ${response.trim()}`;
+            // Lưu theo cấu trúc: [Dòng 1: Nhân viên] \n [Dòng 2: Admin]
+            t.comment = `${t.comment.split('\n')[0]}\n[Phản hồi Admin]: ${response.trim()}`;
             saveData();
         }
     }
@@ -372,7 +358,9 @@
         if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Trống</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
-            body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${t.comment || ''}</td></tr>`;
+            // Hiển thị xuống dòng trong báo cáo (thay \n bằng <br>)
+            const displayComment = t.comment ? t.comment.replace(/\n/g, '<br>') : '';
+            body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${displayComment}</td></tr>`;
         });
         document.getElementById('btnExportPdf').style.display = "inline-block";
     }
@@ -386,7 +374,7 @@
 
     function raiseHand(id) {
         const t = allTasks.find(x => x.id === id);
-        const reason = prompt("Nhập giải trình:", t.comment || "");
+        const reason = prompt("Nhập giải trình:", t.comment.split('\n')[0] || "");
         if (reason !== null) { t.comment = reason; saveData(); }
     }
 
@@ -415,11 +403,7 @@
 
     function toggleAbout() { document.getElementById('aboutContent').style.display = (document.getElementById('aboutContent').style.display === 'block') ? 'none' : 'block'; }
     window.onclick = (e) => { if (!e.target.matches('.about-btn')) document.getElementById('aboutContent').style.display = 'none'; }
-    
-    window.onload = async () => {
-        await fetchData();
-        setupEnterNavigation();
-    };
+    window.onload = fetchData;
 </script>
 </body>
 </html>
