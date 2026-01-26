@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.30</title>
+    <title>Deadline Manage - Version Abv.31</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.30</b> 
+                📋 <b>DEADLINE MANAGE Abv.31</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -117,16 +117,40 @@
             <label>Từ ngày:</label> <input type="date" id="repStartDate">
             <label>Đến ngày:</label> <input type="date" id="repEndDate">
             <label>Trạng thái:</label> 
-            <select id="repStatus"><option value="All">Tất cả</option><option value="Đang làm">Đang làm</option><option value="Hoàn thành">Hoàn thành</option><option value="Quá hạn">Quá hạn</option></select>
-            <label>Email:</label> <select id="repEmailFilter"><option value="All">Tất cả Email</option></select>
+            <select id="repStatus">
+                <option value="All">Tất cả</option>
+                <option value="Đang làm">Đang làm</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Quá hạn">Quá hạn</option>
+            </select>
+            <label>Email:</label> 
+            <select id="repEmailFilter">
+                <option value="All">Tất cả Email</option>
+            </select>
+            
             <button onclick="generateReport()" style="background:var(--primary); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer;">Xem báo cáo</button>
             <button id="btnExportPdf" onclick="exportToPDF()" style="background:var(--danger); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer; display:none;">Xuất PDF</button>
         </div>
+        
         <div style="overflow:auto; flex-grow:1; border:1px solid #eee; padding:10px;" id="reportArea">
             <div id="pdfContent">
-                <div id="pdfHeader" style="display:none; text-align:center;"><h2>BAO CAO THEO DOI DEADLINE CONG VIEC</h2><div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div></div>
+                <div id="pdfHeader" style="display:none; text-align:center;">
+                    <h2 style="margin-bottom:5px;">BAO CAO THEO DOI DEADLINE CONG VIEC</h2>
+                    <div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div>
+                </div>
                 <table class="pdf-table" id="reportTable">
-                    <thead><tr><th style="width:30px;">STT</th><th>Nội dung công việc / Bộ phận</th><th style="width:80px;">Bắt đầu</th><th style="width:80px;">Hạn chót</th><th style="width:40px;">Lần</th><th>Tham chiếu</th><th style="width:90px;">Trạng thái</th><th>Giải trình</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width:30px;">STT</th>
+                            <th>Nội dung công việc / Bộ phận</th>
+                            <th style="width:80px;">Bắt đầu</th>
+                            <th style="width:80px;">Hạn chót</th>
+                            <th style="width:40px;">Lần</th>
+                            <th>Tham chiếu</th>
+                            <th style="width:90px;">Trạng thái</th>
+                            <th>Giải trình</th>
+                        </tr>
+                    </thead>
                     <tbody id="reportBody"></tbody>
                 </table>
             </div>
@@ -244,7 +268,6 @@
             const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             let handClick = deviceIndex >= 3 ? `onclick="raiseHand('${t.id}')"` : `onclick="showNotice('${handTip}')"`;
 
-            // --- NÂNG CẤP CỘT 7 CHO ADMIN ID1-2 (ABV.30) ---
             const isAdmin12 = (deviceIndex === 0 || deviceIndex === 1);
             const hasComment = t.comment && t.comment.trim() !== "";
             const statusStyle = (isAdmin12 && hasComment) ? 'cursor:pointer; text-decoration:underline;' : '';
@@ -263,8 +286,13 @@
                     <td class="col-8">
                         <div class="action-group">
                             <i class="fa-solid fa-hand hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
-                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''}><i class="fa-solid fa-check"></i></button>
-                            ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" onclick="sendManualMail('${t.id}')" title="${t.alertSent?'Đã gửi email tự động':''}"><i class="fa-solid fa-envelope"></i></button>` : ''}
+                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''} title="${t.status}"><i class="fa-solid fa-check"></i></button>
+                            ${isOverdue ? `
+                            <button class="btn-sm" style="background:${t.alertSent ? '#94a3b8' : 'var(--warning)'}" 
+                                onclick="sendManualMail('${t.id}')" 
+                                title="${t.alertSent ? 'Đã gửi email nhắc việc !' : ''}">
+                                <i class="fa-solid fa-envelope"></i>
+                            </button>` : ''}
                             <button class="btn-sm" style="background:#ef476f; color:white; opacity:${delDisable?'0.4':'1'};" onclick="deleteTask('${t.id}')" ${delDisable?'disabled':''}><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </td>
@@ -272,7 +300,6 @@
         });
     }
 
-    // --- HÀM PHẢN HỒI DÀNH CHO ADMIN (ABV.30) ---
     function adminResponseToComment(id) {
         const t = allTasks.find(x => x.id === id);
         const response = prompt(`Nhân viên giải trình: "${t.comment}"\n\nNhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`, "");
@@ -298,7 +325,7 @@
             let emailMatch = (emailFilter === "All") ? true : (t.email === emailFilter);
             return dateMatch && statusMatch && emailMatch;
         });
-        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không dữ liệu</td></tr>"; return; }
+        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không có dữ liệu phù hợp</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
             body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${t.comment || ''}</td></tr>`;
@@ -334,7 +361,7 @@
         }, true);
     }
 
-    function confirmComplete(id) { 
+    function confirmComplete(id) { 
         const t = allTasks.find(x => x.id === id);
         showNotice(`Bạn xác nhận hoàn thành công việc có email ${t.email} ?`, (ok) => {
             if(ok) { allTasks.forEach(item => { if (item.email === t.email) item.cffinish = currentID; }); t.status = "Hoàn thành"; saveData(); }
