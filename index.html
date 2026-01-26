@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.34</title>
+    <title>Deadline Manage - Version Abv.35</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.34</b> 
+                📋 <b>DEADLINE MANAGE Abv.35</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -179,32 +179,54 @@
             if (data.emailList) emailList = data.emailList;
             await silentSecurityCheck();
             updateEmailDatalist();
-            // KHÔI PHỤC: Chạy logic kiểm tra quá hạn và tự động gửi mail
             await checkOverdueAndAutoMail();
             renderTable();
+            // --- CẬP NHẬT: Focus ô đầu tiên khi khởi động (ABV.35) ---
+            document.getElementById('taskName').focus();
         } catch (e) { console.error("Error"); }
     }
 
-    // --- HÀM KHÔI PHỤC LOGIC TỰ ĐỘNG (ABV.34) ---
+    // --- CẬP NHẬT: Logic điều hướng Enter (ABV.35) ---
+    function setupEnterNavigation() {
+        const inputs = [
+            document.getElementById('taskName'),
+            document.getElementById('taskDept'),
+            document.getElementById('startDate'),
+            document.getElementById('deadline'),
+            document.getElementById('iterCount'),
+            document.getElementById('taskRef'),
+            document.getElementById('emailRecipient')
+        ];
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (input.value.trim() !== "") {
+                        e.preventDefault();
+                        if (index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        } else {
+                            addTask();
+                        }
+                    }
+                }
+            });
+        });
+    }
+
     async function checkOverdueAndAutoMail() {
         const now = new Date(); now.setHours(0,0,0,0);
         let hasChanges = false;
         const deviceIndex = whitelist.indexOf(currentID);
-
         for (let t of allTasks) {
             const deadlineDate = new Date(t.end);
             if (deadlineDate < now && t.status !== "Hoàn thành") {
-                if (t.status !== "Quá hạn") {
-                    t.status = "Quá hạn";
-                    hasChanges = true;
-                }
-                // Tự động gửi mail (Chỉ thiết bị ID1 thực hiện để tránh spam)
+                if (t.status !== "Quá hạn") { t.status = "Quá hạn"; hasChanges = true; }
                 if (deviceIndex === 0 && !t.alertSent) {
                     const parts = t.end.split('-'); const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
                     try {
                         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
-                        t.alertSent = true;
-                        hasChanges = true;
+                        t.alertSent = true; hasChanges = true;
                     } catch (err) { console.error("Auto mail failed"); }
                 }
             }
@@ -249,6 +271,10 @@
         if (mail && !emailList.includes(mail)) { emailList.push(mail); updateEmailDatalist(); }
         allTasks.push({ id: Date.now().toString(), name: n, dept: document.getElementById('taskDept').value, email: mail, start: s, end: e, iteration: document.getElementById('iterCount').value, ref: document.getElementById('taskRef').value, status: "Đang làm", alertSent: false, stt: allTasks.length + 1, createdAt: new Date().toISOString(), inputID: currentID, cffinish: "", comment: "" });
         saveData();
+        // --- CẬP NHẬT: Sau khi thêm, xóa sạch và quay lại ô đầu (ABV.35) ---
+        document.getElementById('taskName').value = "";
+        document.getElementById('taskRef').value = "";
+        document.getElementById('taskName').focus();
     }
 
     function renderTable() {
@@ -256,7 +282,6 @@
         const now = new Date(); now.setHours(0,0,0,0);
         const deviceIndex = whitelist.indexOf(currentID);
         const lockedEmail = (allTasks.find(t => t.cffinish === currentID))?.email;
-
         [...allTasks].reverse().forEach((t) => {
             const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
             const isDone = t.status === 'Hoàn thành';
@@ -268,16 +293,13 @@
             }
             let delDisable = (deviceIndex >= 3) || (t.status === "Hoàn thành" || t.status === "Quá hạn");
             if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) delDisable = true;
-
             const handColor = (t.comment && t.comment.trim() !== "") ? '#2ecc71' : '#f1c40f'; 
             const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             let handClick = deviceIndex >= 3 ? `onclick="raiseHand('${t.id}')"` : `onclick="showNotice('${handTip}')"`;
-
             const isAdmin12 = (deviceIndex === 0 || deviceIndex === 1);
             const hasComment = t.comment && t.comment.trim() !== "";
             const statusStyle = (isAdmin12 && hasComment) ? 'cursor:pointer; text-decoration:underline;' : '';
             const statusClick = (isAdmin12 && hasComment) ? `onclick="adminResponseToComment('${t.id}')"` : '';
-
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt}</td>
@@ -330,7 +352,7 @@
             let emailMatch = (emailFilter === "All") ? true : (t.email === emailFilter);
             return dateMatch && statusMatch && emailMatch;
         });
-        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Trống</td></tr>"; return; }
+        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không có dữ liệu phù hợp</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
             body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${t.comment || ''}</td></tr>`;
@@ -376,7 +398,12 @@
 
     function toggleAbout() { document.getElementById('aboutContent').style.display = (document.getElementById('aboutContent').style.display === 'block') ? 'none' : 'block'; }
     window.onclick = (e) => { if (!e.target.matches('.about-btn')) document.getElementById('aboutContent').style.display = 'none'; }
-    window.onload = fetchData;
+    
+    // --- KHỞI CHẠY (ABV.35) ---
+    window.onload = async () => {
+        await fetchData();
+        setupEnterNavigation();
+    };
 </script>
 </body>
 </html>
