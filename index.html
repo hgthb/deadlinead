@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version Abv.29</title>
+    <title>Deadline Manage - Version Abv.30</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -28,14 +28,12 @@
         .col-stt { width: 45px; text-align: center; }
         .col-1 { width: 28%; } .col-2, .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; } .col-5 { width: 12%; } .col-6 { width: 8%; } .col-7 { width: 10%; } .col-8 { width: 14%; text-align: right; }
 
-        /* Report Modal Styles */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fff; margin: 2% auto; padding: 20px; border: 1px solid #888; width: 95%; max-width: 1300px; border-radius: 8px; max-height: 90vh; display: flex; flex-direction: column; }
         .report-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 10px; border-radius: 6px; }
         .report-controls label { font-size: 12px; font-weight: bold; color: #64748b; }
         .report-controls input, .report-controls select { height: 30px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; padding: 0 5px; }
 
-        /* Custom Dialog */
         .custom-dialog-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
         .custom-dialog { background: white; width: 90%; max-width: 350px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
         .dialog-header { background: #f8fafc; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
@@ -56,6 +54,8 @@
         .pdf-table th, .pdf-table td { border: 1px solid #333; padding: 8px; text-align: left; }
         
         body.is-readonly #adminForm, body.is-readonly .btn-add { pointer-events: none !important; filter: grayscale(1) opacity(0.3) !important; }
+        .progress-bg { width: 100%; background: #eee; height: 6px; border-radius: 3px; }
+        .progress-fill { height: 100%; border-radius: 3px; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -64,7 +64,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE Abv.29</b> 
+                📋 <b>DEADLINE MANAGE Abv.30</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -117,40 +117,16 @@
             <label>Từ ngày:</label> <input type="date" id="repStartDate">
             <label>Đến ngày:</label> <input type="date" id="repEndDate">
             <label>Trạng thái:</label> 
-            <select id="repStatus">
-                <option value="All">Tất cả</option>
-                <option value="Đang làm">Đang làm</option>
-                <option value="Hoàn thành">Hoàn thành</option>
-                <option value="Quá hạn">Quá hạn</option>
-            </select>
-            <label>Email:</label> 
-            <select id="repEmailFilter">
-                <option value="All">Tất cả Email</option>
-            </select>
-            
+            <select id="repStatus"><option value="All">Tất cả</option><option value="Đang làm">Đang làm</option><option value="Hoàn thành">Hoàn thành</option><option value="Quá hạn">Quá hạn</option></select>
+            <label>Email:</label> <select id="repEmailFilter"><option value="All">Tất cả Email</option></select>
             <button onclick="generateReport()" style="background:var(--primary); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer;">Xem báo cáo</button>
             <button id="btnExportPdf" onclick="exportToPDF()" style="background:var(--danger); color:white; border:none; padding:5px 15px; border-radius:4px; font-size:12px; cursor:pointer; display:none;">Xuất PDF</button>
         </div>
-        
         <div style="overflow:auto; flex-grow:1; border:1px solid #eee; padding:10px;" id="reportArea">
             <div id="pdfContent">
-                <div id="pdfHeader" style="display:none; text-align:center;">
-                    <h2 style="margin-bottom:5px;">BAO CAO THEO DOI DEADLINE CONG VIEC</h2>
-                    <div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div>
-                </div>
+                <div id="pdfHeader" style="display:none; text-align:center;"><h2>BAO CAO THEO DOI DEADLINE CONG VIEC</h2><div id="pdfDateDisplay" style="margin-bottom:15px; font-size:12px;"></div></div>
                 <table class="pdf-table" id="reportTable">
-                    <thead>
-                        <tr>
-                            <th style="width:30px;">STT</th>
-                            <th>Nội dung công việc / Bộ phận</th>
-                            <th style="width:80px;">Bắt đầu</th>
-                            <th style="width:80px;">Hạn chót</th>
-                            <th style="width:40px;">Lần</th>
-                            <th>Tham chiếu</th>
-                            <th style="width:90px;">Trạng thái</th>
-                            <th>Giải trình</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th style="width:30px;">STT</th><th>Nội dung công việc / Bộ phận</th><th style="width:80px;">Bắt đầu</th><th style="width:80px;">Hạn chót</th><th style="width:40px;">Lần</th><th>Tham chiếu</th><th style="width:90px;">Trạng thái</th><th>Giải trình</th></tr></thead>
                     <tbody id="reportBody"></tbody>
                 </table>
             </div>
@@ -211,7 +187,6 @@
         const listEl = document.getElementById('emailList');
         const filterEl = document.getElementById('repEmailFilter');
         listEl.innerHTML = "";
-        // Cập nhật cả datalist và bộ lọc trong Report
         filterEl.innerHTML = '<option value="All">Tất cả Email</option>';
         emailList.forEach(email => { 
             const opt = document.createElement('option'); opt.value = email; listEl.appendChild(opt); 
@@ -269,6 +244,12 @@
             const handTip = t.comment ? `Giải trình : ${t.comment}` : (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
             let handClick = deviceIndex >= 3 ? `onclick="raiseHand('${t.id}')"` : `onclick="showNotice('${handTip}')"`;
 
+            // --- NÂNG CẤP CỘT 7 CHO ADMIN ID1-2 (ABV.30) ---
+            const isAdmin12 = (deviceIndex === 0 || deviceIndex === 1);
+            const hasComment = t.comment && t.comment.trim() !== "";
+            const statusStyle = (isAdmin12 && hasComment) ? 'cursor:pointer; text-decoration:underline;' : '';
+            const statusClick = (isAdmin12 && hasComment) ? `onclick="adminResponseToComment('${t.id}')"` : '';
+
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
                     <td class="col-stt">${t.stt}</td>
@@ -278,7 +259,7 @@
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
                     <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
-                    <td class="col-7"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
+                    <td class="col-7" ${statusClick} style="${statusStyle}"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <div class="action-group">
                             <i class="fa-solid fa-hand hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
@@ -291,59 +272,42 @@
         });
     }
 
-    // --- LOGIC REPORT NÂNG CẤP (ABV.29) ---
+    // --- HÀM PHẢN HỒI DÀNH CHO ADMIN (ABV.30) ---
+    function adminResponseToComment(id) {
+        const t = allTasks.find(x => x.id === id);
+        const response = prompt(`Nhân viên giải trình: "${t.comment}"\n\nNhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`, "");
+        if (response !== null && response.trim() !== "") {
+            t.comment = `${t.comment} | [Phản hồi Admin]: ${response.trim()}`;
+            saveData();
+        }
+    }
+
     function openReportModal() { document.getElementById('reportModal').style.display = "block"; }
     function closeReportModal() { document.getElementById('reportModal').style.display = "none"; }
 
     function generateReport() {
-        const start = document.getElementById('repStartDate').value;
-        const end = document.getElementById('repEndDate').value;
-        const status = document.getElementById('repStatus').value;
-        const emailFilter = document.getElementById('repEmailFilter').value;
-        const body = document.getElementById('reportBody');
-        body.innerHTML = "";
-
+        const start = document.getElementById('repStartDate').value, end = document.getElementById('repEndDate').value;
+        const status = document.getElementById('repStatus').value, emailFilter = document.getElementById('repEmailFilter').value;
+        const body = document.getElementById('reportBody'); body.innerHTML = "";
         const sDate = start ? new Date(start) : null; if(sDate) sDate.setHours(0,0,0,0);
         const eDate = end ? new Date(end) : null; if(eDate) eDate.setHours(23,59,59,999);
-
         let filtered = allTasks.filter(t => {
             const tDate = new Date(t.end); tDate.setHours(0,0,0,0);
-            let dateMatch = true;
-            if(sDate && tDate < sDate) dateMatch = false;
-            if(eDate && tDate > eDate) dateMatch = false;
+            let dateMatch = true; if(sDate && tDate < sDate) dateMatch = false; if(eDate && tDate > eDate) dateMatch = false;
             let statusMatch = (status === "All") ? true : (t.status === status);
             let emailMatch = (emailFilter === "All") ? true : (t.email === emailFilter);
             return dateMatch && statusMatch && emailMatch;
         });
-
-        if(filtered.length === 0) {
-            body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không có dữ liệu phù hợp</td></tr>";
-            document.getElementById('btnExportPdf').style.display = "none";
-            return;
-        }
-
-        // SẮP XẾP THEO EMAIL (Sorting)
+        if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Không dữ liệu</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
-
         filtered.forEach((t, index) => {
-            body.innerHTML += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td>
-                    <td>${t.start}</td>
-                    <td>${t.end}</td>
-                    <td>${t.iteration}</td>
-                    <td>${t.ref || ''}</td>
-                    <td>${t.status}</td>
-                    <td>${t.comment || ''}</td>
-                </tr>`;
+            body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${t.comment || ''}</td></tr>`;
         });
         document.getElementById('btnExportPdf').style.display = "inline-block";
     }
 
     function exportToPDF() {
-        const element = document.getElementById('pdfContent');
-        const header = document.getElementById('pdfHeader');
+        const element = document.getElementById('pdfContent'), header = document.getElementById('pdfHeader');
         header.style.display = "block";
         document.getElementById('pdfDateDisplay').innerText = "Ngay lam bao cao : " + new Date().toLocaleDateString('vi-VN');
         html2pdf().set({ margin: 10, filename: 'Bao_cao_Deadline.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } }).from(element).save().then(() => header.style.display = "none");
@@ -363,15 +327,14 @@
         const t = allTasks.find(x => x.id === id);
         showNotice("Đã gửi email tự động, bạn muốn gửi lại không ?", async (ok) => {
             if(ok) {
-                const parts = t.end.split('-');
-                const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
+                const parts = t.end.split('-'); const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
                 await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { task_name: t.name, deadline: dateFmt, ref: t.ref, dept: t.dept, to_email: t.email });
                 t.alertSent = true; await silentSave(); renderTable();
             }
         }, true);
     }
 
-    function confirmComplete(id) { 
+    function confirmComplete(id) { 
         const t = allTasks.find(x => x.id === id);
         showNotice(`Bạn xác nhận hoàn thành công việc có email ${t.email} ?`, (ok) => {
             if(ok) { allTasks.forEach(item => { if (item.email === t.email) item.cffinish = currentID; }); t.status = "Hoàn thành"; saveData(); }
