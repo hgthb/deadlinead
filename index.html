@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Deadline Manage - Version AC.8</title>
+    <title>Deadline Manage - Version AC.9</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
-        :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; }
+        :root { --primary: #4361ee; --success: #2ecc71; --danger: #ef476f; --warning: #ffd166; --dark: #1e293b; --bg: #f1f5f9; --forward: #9b59b6; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; }
         .app-scroll-container { flex-grow: 1; overflow-x: auto; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; padding: 5px 10px; }
         .content-inner { display: flex; flex-direction: column; height: 100%; min-width: 100%; }
@@ -22,7 +22,6 @@
         th, td { border-bottom: 1px solid #f8fafc; font-size: 12px; min-height: 42px; padding: 8px 10px; white-space: nowrap; }
         th { background: #f8fafc; color: #64748b; position: sticky; top: 0; z-index: 10; text-transform: uppercase; font-size: 11px; }
         .col-stt { width: 45px; text-align: center; }
-        /* Cho phép cột 2 xuống hàng */
         .col-1 { width: 28%; white-space: normal !important; word-wrap: break-word; line-height: 1.4; } 
         .col-2, .col-3 { width: 9%; } .col-4 { width: 5%; text-align: center; } .col-5 { width: 12%; } .col-6 { width: 8%; } .col-7 { width: 10%; } .col-8 { width: 14%; text-align: right; }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #fff; font-weight: 700; min-width: 75px; text-align: center; display: inline-block; }
@@ -42,13 +41,13 @@
         .custom-dialog-overlay { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
         .custom-dialog { background: white; width: 95%; max-width: 380px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
         .dialog-header { background: #f8fafc; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .dialog-body { padding: 15px; font-size: 14px; line-height: 1.5; color: #475569; text-align: center; }
+        .dialog-body { padding: 15px; font-size: 14px; line-height: 1.5; color: #475569; text-align: left; max-height: 300px; overflow-y: auto; }
         .dialog-footer { padding: 10px 15px; background: #f8fafc; display: flex; gap: 10px; justify-content: center; }
         .dialog-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; min-width: 80px; }
         .btn-confirm { background: var(--primary); color: white; }
         .btn-cancel { background: #e2e8f0; color: #64748b; }
         
-        #dialogInput { width: 100%; padding: 8px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; display: none; box-sizing: border-box; font-family: inherit; }
+        #dialogInput { width: calc(100% - 30px); margin: 0 15px 15px 15px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: none; box-sizing: border-box; font-family: inherit; }
 
         .about-btn { margin-left: 15px; font-size: 11px; font-weight: bold; color: #c0c0c0; text-shadow: -1px -1px 1px rgba(0,0,0,0.5), 1px 1px 1px rgba(255,255,255,0.8); cursor: pointer; }
         .about-dropdown { display: none; position: absolute; top: 35px; left: 160px; background: white; border: 1px solid #ddd; padding: 12px; border-radius: 6px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.15); font-size: 12px; white-space: normal; }
@@ -68,7 +67,7 @@
     <div class="content-inner">
         <div class="top-bar">
             <div class="brand">
-                📋 <b>DEADLINE MANAGE AC.8</b> 
+                📋 <b>DEADLINE MANAGE AC.9</b> 
                 <span class="about-btn" ondblclick="toggleAbout()">About</span>
                 <div id="aboutContent" class="about-dropdown">Developed by Mr Hưng<br>Tel : 0965594679<br>Email : ndhung.pl@gmail.com</div>
                 <span id="syncStatus" style="margin-left:10px; font-size:11px; color:var(--success);"></span> 
@@ -121,7 +120,13 @@
             <label>Từ:</label> <input type="date" id="repStartDate">
             <label>Đến:</label> <input type="date" id="repEndDate">
             <label>Trạng Thái:</label> 
-            <select id="repStatus"><option value="All">Tất cả</option><option value="Đang làm">Đang làm</option><option value="Hoàn thành">Hoàn thành</option><option value="Quá hạn">Quá hạn</option></select>
+            <select id="repStatus">
+                <option value="All">Tất cả</option>
+                <option value="Đang làm">Đang làm</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+                <option value="Quá hạn">Quá hạn</option>
+                <option value="CHUYỂN TIẾP">CHUYỂN TIẾP</option>
+            </select>
             <label>Email:</label> <select id="repEmailFilter"><option value="All">Tất cả Email</option></select>
             <button onclick="generateReport()" style="background:var(--primary); color:white; border:none; padding:0 12px; height:30px; border-radius:4px; font-size:11px; cursor:pointer; white-space:nowrap;">Xem</button>
             <button id="btnExportPdf" onclick="exportToPDF()" style="background:var(--danger); color:white; border:none; padding:0 12px; height:30px; border-radius:4px; font-size:11px; cursor:pointer; display:none; white-space:nowrap;">Xuất PDF</button>
@@ -173,11 +178,25 @@
 
     let allTasks = [], whitelist = [], emailList = ["hanhtd@acv.vn", "hailh@acv.vn", "toannd3@acv.vn", "hadtt1@acv.vn", "trangnth2@acv.vn", "thuypv@acv.vn", "haint@acv.vn", "thanhpn1@acv.vn", "huannq@acv.vn"];
     
+    const monthMap = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06', JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' };
+
     const currentID = (() => {
         let id = localStorage.getItem('my_unique_device_id');
         if (!id) { id = "ID-" + Date.now() + "-" + Math.floor(Math.random() * 1000); localStorage.setItem('my_unique_device_id', id); }
         return id;
     })();
+
+    function parseFreeTextDate(str) {
+        if (!str) return null;
+        const match = str.match(/(\d{1,2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{4})/i);
+        if (match) {
+            const day = match[1].padStart(2, '0');
+            const month = monthMap[match[2].toUpperCase()];
+            const year = match[3];
+            return `${year}-${month}-${day}`;
+        }
+        return null;
+    }
 
     async function fetchData() {
         onValue(ref(db, 'deadlineData'), async (snapshot) => {
@@ -199,10 +218,8 @@
         if (allTasks.length === 0) return;
         const lastRecord = allTasks[allTasks.length - 1];
         if (!lastRecord.createdAt) return;
-
         const recordYear = new Date(lastRecord.createdAt).getFullYear();
         const currentYear = new Date().getFullYear();
-
         if (recordYear < currentYear) {
             const backupPath = `deadline${recordYear}`;
             try {
@@ -259,24 +276,46 @@
                 return window.showNotice(`Bạn chỉ được phép giải trình cho công việc thuộc email: ${lockedEmail}`);
             }
         }
-        const currentClientPart = t.comment.split(' | [Phản hồi Admin]: ')[0];
-        const reason = prompt("Nhập giải trình:", currentClientPart || "");
-        if (reason !== null) {
-            const adminPart = t.comment.split(' | [Phản hồi Admin]: ')[1];
-            t.comment = adminPart ? `${reason} | [Phản hồi Admin]: ${adminPart}` : reason;
+        const reason = prompt("Nhập giải trình:", "");
+        if (reason) {
+            t.comment = (t.comment ? t.comment + "\n" : "") + "[Client]: " + reason + "\n";
             window.saveData();
         }
     };
 
     window.adminResponseToComment = (id) => {
         const t = allTasks.find(x => x.id === id);
-        const clientPart = t.comment.split(' | [Phản hồi Admin]: ')[0];
-        const msg = `NHÂN VIÊN GIẢI TRÌNH:<br>"${clientPart}"<br><br>Nhập phản hồi (Đồng ý hoặc Yêu cầu thay đổi):`;
+        const msg = `LỊCH SỬ TRAO ĐỔI:<br><div style="background:#f1f5f9; padding:10px; border-radius:4px; font-size:12px; margin-bottom:10px; white-space:pre-wrap;">${t.comment || "Chưa có nội dung"}</div>Nhập phản hồi hoặc lệnh Chuyển tiếp (ví dụ: chuyển sang ngày : 30JAN2026):`;
+        
         window.showNotice(msg, async (ok) => {
             if(ok) {
                 const val = document.getElementById('dialogInput').value.trim();
                 if(val !== "") {
-                    t.comment = `${clientPart} | [Phản hồi Admin]: ${val}`;
+                    // Cập nhật comment dạng chat
+                    t.comment = (t.comment ? t.comment + "\n" : "") + "[Admin]: " + val + "\n";
+                    
+                    // Kiểm tra lệnh CHUYỂN TIẾP
+                    const trigger = "chuyển sang ngày : ";
+                    if (val.toLowerCase().includes(trigger)) {
+                        const datePart = val.toLowerCase().split(trigger)[1].trim().toUpperCase();
+                        const newDeadline = parseFreeTextDate(datePart);
+                        if (newDeadline) {
+                            t.status = "CHUYỂN TIẾP";
+                            // Tạo record mới
+                            const newTask = {
+                                ...t,
+                                id: Date.now().toString(),
+                                end: newDeadline,
+                                status: "Đang làm",
+                                createdAt: new Date().toISOString(),
+                                stt: allTasks.length + 1,
+                                comment: "", // Record mới bắt đầu comment trống
+                                alertSent: false,
+                                cffinish: ""
+                            };
+                            allTasks.push(newTask);
+                        }
+                    }
                     window.saveData();
                 }
             }
@@ -330,10 +369,7 @@
         if(filtered.length === 0) { body.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Trống</td></tr>"; return; }
         filtered.sort((a, b) => a.email.localeCompare(b.email));
         filtered.forEach((t, index) => {
-            const parts = (t.comment || "").split(' | [Phản hồi Admin]: ');
-            let displayComment = parts[0] ? `Giải trình : ${parts[0]}` : "";
-            if (parts[1]) displayComment += `<br>Admin phản hồi : ${parts[1]}`;
-            body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td>${displayComment}</td></tr>`;
+            body.innerHTML += `<tr><td>${index + 1}</td><td><b>${t.name}</b><br><small>${t.dept} - ${t.email}</small></td><td>${t.start}</td><td>${t.end}</td><td>${t.iteration}</td><td>${t.ref || ''}</td><td>${t.status}</td><td style="white-space:pre-wrap;">${t.comment || ""}</td></tr>`;
         });
         document.getElementById('btnExportPdf').style.display = "inline-block";
     };
@@ -351,40 +387,35 @@
         const deviceIndex = whitelist.indexOf(currentID);
         const lockedEmail = (allTasks.find(t => t.cffinish === currentID))?.email;
         [...allTasks].reverse().forEach((t) => {
-            const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành";
+            const isOverdue = new Date(t.end) < now && t.status !== "Hoàn thành" && t.status !== "CHUYỂN TIẾP";
             const isDone = t.status === 'Hoàn thành';
-            let statusColor = isDone ? '#2ecc71' : (t.status === 'Quá hạn' ? '#ef476f' : '#4361ee');
+            const isForward = t.status === 'CHUYỂN TIẾP';
+            let statusColor = isDone ? 'var(--success)' : (isForward ? 'var(--forward)' : (t.status === 'Quá hạn' ? 'var(--danger)' : 'var(--primary)'));
+            
             let compDisable = true;
             if (deviceIndex >= 3 && t.status === "Đang làm") {
                 if (!lockedEmail && !t.cffinish) compDisable = false;
                 else if (t.email === lockedEmail) compDisable = false;
             }
-            let delDisable = (deviceIndex >= 3) || (t.status === "Hoàn thành" || t.status === "Quá hạn");
+            let delDisable = (deviceIndex >= 3) || (t.status === "Hoàn thành" || t.status === "Quá hạn" || isForward);
             if (deviceIndex === 2 && (new Date() - new Date(t.createdAt)) / 3600000 > 24) delDisable = true;
             
-            const parts = (t.comment || "").split(' | [Phản hồi Admin]: ');
-            const hasClientPart = parts[0] && parts[0].trim() !== "";
-            const hasAdminPart = parts[1] && parts[1].trim() !== "";
-            const isHandshake = hasClientPart && hasAdminPart;
-            const handColor = (hasClientPart || hasAdminPart) ? '#2ecc71' : '#f1c40f'; 
-            const iconClass = isHandshake ? 'fa-handshake' : 'fa-hand';
-            
-            let handTip = `Giải trình : ${parts[0] || ""}`;
-            if (parts[1]) handTip += `\nAdmin phản hồi : ${parts[1]}`;
-            if (!hasClientPart && !hasAdminPart) handTip = (deviceIndex >= 3 ? "Bấm để nhập giải trình" : "Chưa có giải trình");
+            const hasComment = t.comment && t.comment.trim() !== "";
+            const handColor = hasComment ? 'var(--success)' : '#f1c40f'; 
+            const iconClass = hasComment ? 'fa-comments' : 'fa-hand';
             
             let handClick = "";
             if (deviceIndex >= 3) {
                 if (lockedEmail && t.email !== lockedEmail) handClick = `onclick="window.showNotice('Bạn chỉ được phép giải trình cho công việc thuộc email: ${lockedEmail}')"`;
                 else handClick = `onclick="window.raiseHand('${t.id}')"`;
             } else {
-                const safeTip = handTip.replace(/'/g, "\\'").replace(/\n/g, "\\n");
+                const safeTip = (t.comment || "Chưa có trao đổi").replace(/'/g, "\\'").replace(/\n/g, "<br>");
                 handClick = `onclick="window.showNotice('${safeTip}')"`;
             }
 
             const isAdmin12 = (deviceIndex === 0 || deviceIndex === 1);
-            const statusStyle = (isAdmin12 && hasClientPart) ? 'cursor:pointer; text-decoration:underline;' : '';
-            const statusClick = (isAdmin12 && hasClientPart) ? `onclick="window.adminResponseToComment('${t.id}')"` : '';
+            const statusStyle = (isAdmin12) ? 'cursor:pointer; text-decoration:underline;' : '';
+            const statusClick = (isAdmin12) ? `onclick="window.adminResponseToComment('${t.id}')"` : '';
             
             body.innerHTML += `
                 <tr class="${isOverdue ? 'overdue-row' : ''}">
@@ -394,12 +425,12 @@
                     <td class="col-3" style="color:${isOverdue?'var(--danger)':'inherit'}">${t.end}</td>
                     <td class="col-4">${t.iteration}</td>
                     <td class="col-5">${t.ref || ''}</td>
-                    <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':'50%'};background:${statusColor}"></div></div></td>
+                    <td class="col-6"><div class="progress-bg"><div class="progress-fill" style="width:${isDone?'100%':(isForward?'100%':'50%')};background:${statusColor}"></div></div></td>
                     <td class="col-7" ${statusClick} style="${statusStyle}"><span class="badge" style="background:${statusColor}">${t.status}</span></td>
                     <td class="col-8">
                         <div class="action-group">
-                            <i class="fa-solid ${iconClass} hand-icon" style="color:${handColor};" title="${handTip}" ${handClick}></i>
-                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable?'disabled':''}><i class="fa-solid fa-check"></i></button>
+                            <i class="fa-solid ${iconClass} hand-icon" style="color:${handColor};" ${handClick}></i>
+                            <button class="btn-sm" style="background:${statusColor}; color:white;" onclick="confirmComplete('${t.id}')" ${compDisable || isForward ?'disabled':''}><i class="fa-solid fa-check"></i></button>
                             ${isOverdue ? `<button class="btn-sm" style="background:${t.alertSent?'#94a3b8':'var(--warning)'}" onclick="sendManualMail('${t.id}')"><i class="fa-solid fa-envelope"></i></button>` : ''}
                             <button class="btn-sm" style="background:#ef476f; color:white; opacity:${delDisable?'0.4':'1'};" onclick="deleteTask('${t.id}')" ${delDisable?'disabled':''}><i class="fa-solid fa-trash-can"></i></button>
                         </div>
@@ -414,7 +445,7 @@
         const deviceIndex = whitelist.indexOf(currentID);
         for (let t of allTasks) {
             const deadlineDate = new Date(t.end);
-            if (deadlineDate < now && t.status !== "Hoàn thành") {
+            if (deadlineDate < now && t.status !== "Hoàn thành" && t.status !== "CHUYỂN TIẾP") {
                 if (t.status !== "Quá hạn") { t.status = "Quá hạn"; hasChanges = true; }
                 if (deviceIndex === 0 && !t.alertSent) {
                     const parts = t.end.split('-'); const dateFmt = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : t.end;
